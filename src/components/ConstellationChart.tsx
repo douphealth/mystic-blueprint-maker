@@ -97,8 +97,7 @@ const ConstellationChart = ({ profile, name }: ConstellationChartProps) => {
               textAnchor="middle"
               fill="hsl(230,10%,55%)"
               fontSize="9" fontFamily="Inter, sans-serif"
-              textTransform="uppercase"
-              letterSpacing="1"
+              style={{ textTransform: "uppercase", letterSpacing: "1px" }}
             >
               {node.label}
             </text>
