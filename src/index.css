@@ -197,3 +197,24 @@
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--gold-dim));
 }
+
+/* Shimmer effect for gold text */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.shimmer-text {
+  background-size: 200% auto;
+  animation: shimmer 6s linear infinite;
+}
+
+/* Breathing glow for sections */
+@keyframes breathe-glow {
+  0%, 100% { box-shadow: 0 0 0px hsl(var(--gold) / 0); }
+  50% { box-shadow: 0 0 20px hsl(var(--gold) / 0.06); }
+}
+
+.breathe-glow {
+  animation: breathe-glow 4s ease-in-out infinite;
+}
