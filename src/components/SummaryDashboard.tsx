@@ -7,39 +7,32 @@ interface SummaryDashboardProps {
 }
 
 const items = [
-  { key: "lifePath", label: "Life Path", icon: "🌟" },
-  { key: "expression", label: "Destiny", icon: "🔢" },
-  { key: "soulUrge", label: "Soul Urge", icon: "💜" },
-  { key: "personality", label: "Personality", icon: "🎭" },
-  { key: "birthday", label: "Birthday", icon: "🎂" },
-  { key: "personalYear", label: "Personal Year", icon: "📅" },
+  { key: "lifePath", label: "Life Path" },
+  { key: "expression", label: "Destiny" },
+  { key: "soulUrge", label: "Soul Urge" },
+  { key: "personality", label: "Persona" },
+  { key: "birthday", label: "Birthday" },
+  { key: "personalYear", label: "Year" },
 ];
 
 const SummaryDashboard = ({ profile, name }: SummaryDashboardProps) => {
   const firstName = name.split(" ")[0];
-
-  // Generate a summary paragraph
   const lp = profile.lifePath;
-  const summaryLines = [
-    `${firstName}, your numerology profile reveals a fascinating blend of energies.`,
-    `As a Life Path ${lp}, your core journey revolves around ${lp <= 3 ? "self-expression and leadership" : lp <= 6 ? "building stability and nurturing connections" : "deep wisdom and spiritual growth"}.`,
-    `With a Destiny Number of ${profile.expression} and Soul Urge of ${profile.soulUrge}, you possess a unique combination of outer purpose and inner motivation that shapes every aspect of your life.`,
-    `In ${new Date().getFullYear()}, your Personal Year ${profile.personalYear} energy invites you to ${profile.personalYear <= 3 ? "plant seeds and express yourself boldly" : profile.personalYear <= 6 ? "build foundations and deepen relationships" : "reflect, harvest, and prepare for transformation"}.`,
-  ];
+
+  const summary = `${firstName}, your numerology reveals a Life Path ${lp} journey of ${lp <= 3 ? "self-expression and leadership" : lp <= 6 ? "stability and deep connections" : "wisdom and spiritual growth"}. With Destiny ${profile.expression} and Soul Urge ${profile.soulUrge}, your outer purpose and inner motivation create a unique blueprint. Your ${new Date().getFullYear()} Personal Year ${profile.personalYear} invites ${profile.personalYear <= 3 ? "bold new beginnings" : profile.personalYear <= 6 ? "building and deepening" : "reflection and transformation"}.`;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.7 }}
-      className="bg-card-gradient rounded-xl border border-border/50 p-6 md:p-10"
+      className="bg-card-gradient rounded-xl border border-border/50 p-5 md:p-8"
     >
-      <h2 className="font-display text-2xl md:text-3xl text-center text-gradient-gold mb-8">
-        Your Numerology Profile at a Glance
+      <h2 className="font-display text-xl md:text-2xl text-center text-gradient-gold mb-6">
+        At a Glance
       </h2>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-3 gap-3 mb-6">
         {items.map((item, i) => {
           const value = profile[item.key as keyof NumerologyProfile] as number;
           const cat = getNumberCategory(value);
@@ -50,14 +43,15 @@ const SummaryDashboard = ({ profile, name }: SummaryDashboardProps) => {
               initial={{ opacity: 0, scale: 0.9 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="bg-muted/30 rounded-lg p-4 text-center border border-border/30"
+              transition={{ delay: i * 0.06 }}
+              className="text-center py-3 rounded-lg border border-border/20 bg-muted/15"
             >
-              <span className="text-2xl">{item.icon}</span>
-              <p className="font-display text-3xl font-bold mt-1" style={{ color }}>{value}</p>
-              <p className="font-ui text-xs text-muted-foreground uppercase tracking-wider mt-1">{item.label}</p>
-              <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-ui uppercase tracking-wider"
-                style={{ backgroundColor: `${color}20`, color }}>
+              <p className="font-display text-xl font-bold" style={{ color }}>{value}</p>
+              <p className="font-ui text-[9px] text-muted-foreground uppercase tracking-wider mt-0.5">{item.label}</p>
+              <span
+                className="inline-block mt-1 px-1.5 py-px rounded-full text-[8px] font-ui uppercase tracking-wider"
+                style={{ backgroundColor: `${color}15`, color }}
+              >
                 {cat}
               </span>
             </motion.div>
@@ -65,13 +59,8 @@ const SummaryDashboard = ({ profile, name }: SummaryDashboardProps) => {
         })}
       </div>
 
-      <div className="bg-muted/20 rounded-lg p-6 border border-gold/10">
-        <h3 className="font-display text-sm tracking-[0.2em] uppercase text-gold mb-3">
-          Your Numerology Profile in a Nutshell
-        </h3>
-        <p className="font-body text-lg text-foreground/85 leading-relaxed">
-          {summaryLines.join(" ")}
-        </p>
+      <div className="rounded-lg p-4 border border-border/20 bg-muted/10">
+        <p className="font-body text-[15px] text-foreground/75 leading-relaxed">{summary}</p>
       </div>
     </motion.div>
   );

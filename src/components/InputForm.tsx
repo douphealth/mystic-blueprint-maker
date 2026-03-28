@@ -2,7 +2,6 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 interface InputFormProps {
   onSubmit: (name: string, dob: Date) => void;
@@ -16,8 +15,8 @@ const InputForm = ({ onSubmit }: InputFormProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!name.trim()) { setError("Please enter your full birth name"); return; }
-    if (!dob) { setError("Please enter your date of birth"); return; }
+    if (!name.trim()) { setError("Enter your full birth name"); return; }
+    if (!dob) { setError("Enter your date of birth"); return; }
     const date = new Date(dob + "T00:00:00");
     if (isNaN(date.getTime())) { setError("Invalid date"); return; }
     onSubmit(name.trim(), date);
@@ -26,40 +25,34 @@ const InputForm = ({ onSubmit }: InputFormProps) => {
   return (
     <motion.form
       onSubmit={handleSubmit}
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, delay: 0.5 }}
-      className="w-full max-w-md mx-auto space-y-6"
+      transition={{ duration: 0.6, delay: 0.6 }}
+      className="w-full max-w-sm mx-auto space-y-4"
     >
-      <div className="space-y-2">
-        <Label htmlFor="name" className="font-display text-sm tracking-widest uppercase text-gold-light">
-          Full Name at Birth
-        </Label>
+      <div>
         <Input
-          id="name"
           type="text"
-          placeholder="Enter your full birth name"
+          placeholder="Full name at birth"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="bg-muted/50 border-gold/20 text-foreground font-body text-lg placeholder:text-muted-foreground/50 focus:border-gold focus:ring-gold/30 h-12"
+          className="bg-card/60 border-border/60 text-foreground font-body text-base placeholder:text-muted-foreground/40 focus:border-primary focus:ring-primary/20 h-12 text-center tracking-wide"
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="dob" className="font-display text-sm tracking-widest uppercase text-gold-light">
-          Date of Birth
-        </Label>
+      <div>
         <Input
-          id="dob"
           type="date"
           value={dob}
           onChange={(e) => setDob(e.target.value)}
-          className="bg-muted/50 border-gold/20 text-foreground font-body text-lg focus:border-gold focus:ring-gold/30 h-12"
+          className="bg-card/60 border-border/60 text-foreground font-body text-base focus:border-primary focus:ring-primary/20 h-12 text-center"
         />
       </div>
-      {error && <p className="text-mystic-rose text-sm font-ui">{error}</p>}
+      {error && (
+        <p className="text-destructive text-xs font-ui text-center">{error}</p>
+      )}
       <Button
         type="submit"
-        className="w-full h-14 text-lg font-display tracking-wider uppercase bg-gradient-to-r from-gold-dim via-gold to-gold-dim text-primary-foreground hover:from-gold hover:via-gold-light hover:to-gold border-0 shadow-gold transition-all duration-500"
+        className="w-full h-12 text-sm font-display tracking-[0.2em] uppercase bg-primary text-primary-foreground hover:bg-gold-light border-0 shadow-gold transition-all duration-300"
       >
         Reveal My Blueprint
       </Button>
