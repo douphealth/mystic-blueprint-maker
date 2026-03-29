@@ -1,14 +1,16 @@
-import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
+import { motion } from "framer-motion";
 import { getNumberCategory, getCategoryColor } from "@/lib/numerology";
 import { useEffect, useState } from "react";
+import { Lock } from "lucide-react";
 
 interface NumberRevealProps {
   number: number;
   label: string;
   delay?: number;
+  locked?: boolean;
 }
 
-const NumberReveal = ({ number, label, delay = 0 }: NumberRevealProps) => {
+const NumberReveal = ({ number, label, delay = 0, locked = false }: NumberRevealProps) => {
   const category = getNumberCategory(number);
   const color = getCategoryColor(category);
   const [displayNum, setDisplayNum] = useState(0);
@@ -17,7 +19,6 @@ const NumberReveal = ({ number, label, delay = 0 }: NumberRevealProps) => {
   useEffect(() => {
     const timeout = setTimeout(() => {
       setRevealed(true);
-      // Counting animation
       const duration = 800;
       const steps = 20;
       const interval = duration / steps;
@@ -45,30 +46,33 @@ const NumberReveal = ({ number, label, delay = 0 }: NumberRevealProps) => {
     >
       <div className="relative group">
         <motion.div
-          className="w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center border relative z-10 cursor-pointer"
+          className={`w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center border relative z-10 ${locked ? 'cursor-default' : 'cursor-pointer'}`}
           style={{
-            borderColor: revealed ? `${color}60` : 'transparent',
-            boxShadow: revealed ? `0 0 20px ${color}20, inset 0 0 15px ${color}10` : 'none',
+            borderColor: revealed ? (locked ? 'hsl(var(--muted))' : `${color}60`) : 'transparent',
+            boxShadow: revealed && !locked ? `0 0 20px ${color}20, inset 0 0 15px ${color}10` : 'none',
           }}
-          whileHover={{ scale: 1.1, boxShadow: `0 0 35px ${color}40` }}
-          whileTap={{ scale: 0.95 }}
-          animate={revealed ? {
+          whileHover={!locked ? { scale: 1.1, boxShadow: `0 0 35px ${color}40` } : {}}
+          whileTap={!locked ? { scale: 0.95 } : {}}
+          animate={revealed && !locked ? {
             boxShadow: [`0 0 15px ${color}15`, `0 0 30px ${color}35`, `0 0 15px ${color}15`],
           } : {}}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         >
-          <motion.span
-            className="font-display text-2xl md:text-3xl font-bold tabular-nums"
-            style={{ color: revealed ? color : 'transparent' }}
-            animate={revealed ? { scale: [1, 1.05, 1] } : {}}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: delay }}
-          >
-            {displayNum}
-          </motion.span>
+          {locked ? (
+            <Lock className="w-4 h-4 text-muted-foreground/40" />
+          ) : (
+            <motion.span
+              className="font-display text-2xl md:text-3xl font-bold tabular-nums"
+              style={{ color: revealed ? color : 'transparent' }}
+              animate={revealed ? { scale: [1, 1.05, 1] } : {}}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay }}
+            >
+              {displayNum}
+            </motion.span>
+          )}
         </motion.div>
 
-        {/* Pulse ring on reveal */}
-        {revealed && (
+        {revealed && !locked && (
           <motion.div
             className="absolute inset-0 rounded-full"
             style={{ borderColor: color }}
@@ -82,7 +86,7 @@ const NumberReveal = ({ number, label, delay = 0 }: NumberRevealProps) => {
         initial={{ opacity: 0 }}
         animate={revealed ? { opacity: 1 } : {}}
         transition={{ delay: 0.3 }}
-        className="mt-2 font-ui text-[9px] md:text-[10px] tracking-[0.15em] uppercase text-muted-foreground"
+        className={`mt-2 font-ui text-[9px] md:text-[10px] tracking-[0.15em] uppercase ${locked ? 'text-muted-foreground/40' : 'text-muted-foreground'}`}
       >
         {label}
       </motion.p>
