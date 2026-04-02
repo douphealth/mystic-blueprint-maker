@@ -16,6 +16,28 @@ const premiumModules = [
 ];
 
 const PremiumPaywall = () => {
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleUnlock = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-payment");
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+      }
+    } catch (err: any) {
+      toast({
+        title: "Payment error",
+        description: err.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
