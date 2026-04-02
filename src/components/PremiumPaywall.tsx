@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Lock, FileText, Heart, TrendingUp, Compass, Lightbulb, Download, Star } from "lucide-react";
+import { Lock, FileText, Heart, TrendingUp, Compass, Lightbulb, Download, Star, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const premiumModules = [
   { icon: Compass, title: "Full Blueprint Reading", desc: "All 6 core numbers with deep interpretations and life guidance" },
