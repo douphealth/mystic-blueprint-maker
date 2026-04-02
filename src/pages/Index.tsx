@@ -71,12 +71,12 @@ const Index = () => {
 
       // Save reading if authenticated
       if (user) {
-        supabase.from("saved_readings").insert({
+        supabase.from("saved_readings").insert([{
           user_id: user.id,
           full_name: name,
           birth_date: dob.toISOString().split("T")[0],
-          reading_data: calculatedProfile as unknown as Record<string, unknown>,
-        }).then(() => {});
+          reading_data: JSON.parse(JSON.stringify(calculatedProfile)),
+        }]).then(() => {});
       }
     }, 3800);
   };
