@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Lock, FileText, Heart, TrendingUp, Compass, Lightbulb, Download, Star } from "lucide-react";
+import { Lock, FileText, Heart, TrendingUp, Compass, Lightbulb, Download, Star, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const premiumModules = [
   { icon: Compass, title: "Full Blueprint Reading", desc: "All 6 core numbers with deep interpretations and life guidance" },
@@ -13,6 +16,28 @@ const premiumModules = [
 ];
 
 const PremiumPaywall = () => {
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleUnlock = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-payment");
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+      }
+    } catch (err: any) {
+      toast({
+        title: "Payment error",
+        description: err.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -75,9 +100,14 @@ const PremiumPaywall = () => {
         >
           <Button
             className="h-13 px-12 text-sm font-display tracking-[0.15em] uppercase bg-primary text-primary-foreground hover:bg-gold-light border-0 shadow-gold transition-all duration-300"
-            onClick={() => alert("Stripe integration coming soon! $7.99 one-time payment.")}
+            onClick={handleUnlock}
+            disabled={loading}
           >
-            Unlock for $7.99
+            {loading ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing…</>
+            ) : (
+              "Unlock for $7.99"
+            )}
           </Button>
           <p className="font-ui text-[10px] text-muted-foreground mt-3 tracking-wider">
             One-time payment · Instant access · Lifetime updates
