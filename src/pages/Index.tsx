@@ -28,12 +28,30 @@ const loadingSteps = [
 ];
 
 const Index = () => {
+  const { user } = useAuth();
   const [profile, setProfile] = useState<NumerologyProfile | null>(null);
   const [userName, setUserName] = useState("");
+  const [userDob, setUserDob] = useState<Date | null>(null);
   const [phase, setPhase] = useState<Phase>("landing");
   const [loadingStep, setLoadingStep] = useState(0);
 
   const handleSubmit = (name: string, dob: Date) => {
+    setUserName(name.trim());
+    setUserDob(dob);
+    if (user) {
+      startCalculation(name.trim(), dob);
+    } else {
+      setPhase("email-gate");
+    }
+  };
+
+  const handleEmailComplete = (_email: string) => {
+    if (userName && userDob) {
+      startCalculation(userName, userDob);
+    }
+  };
+
+  const startCalculation = (name: string, dob: Date) => {
     setPhase("calculating");
     setLoadingStep(0);
 
@@ -46,12 +64,32 @@ const Index = () => {
 
     setTimeout(() => {
       clearInterval(stepInterval);
-      setProfile(calculateFullProfile(name, dob));
-      setUserName(name);
+      const calculatedProfile = calculateFullProfile(name, dob);
+      setProfile(calculatedProfile);
       setPhase("revealing");
       setTimeout(() => setPhase("results"), 1200);
+
+      // Save reading if authenticated
+      if (user) {
+        supabase.from("saved_readings").insert({
+          user_id: user.id,
+          full_name: name,
+          birth_date: dob.toISOString().split("T")[0],
+          reading_data: calculatedProfile as unknown as Record<string, unknown>,
+        }).then(() => {});
+      }
     }, 3800);
   };
+
+  // ── Email Gate ──
+  if (phase === "email-gate") {
+    return (
+      <div className="min-h-screen bg-background">
+        <FloatingParticles />
+        <EmailGate userName={userName} onComplete={handleEmailComplete} />
+      </div>
+    );
+  }
 
   // ── Calculating ──
   if (phase === "calculating") {
