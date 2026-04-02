@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import GuidedIntake from "@/components/GuidedIntake";
 import EmailGate from "@/components/EmailGate";
@@ -34,6 +34,13 @@ const Index = () => {
   const [userDob, setUserDob] = useState<Date | null>(null);
   const [phase, setPhase] = useState<Phase>("landing");
   const [loadingStep, setLoadingStep] = useState(0);
+
+  // Auto-advance past email gate if user becomes authenticated
+  useEffect(() => {
+    if (user && phase === "email-gate" && userName && userDob) {
+      startCalculation(userName, userDob);
+    }
+  }, [user, phase]);
 
   const handleSubmit = (name: string, dob: Date) => {
     setUserName(name.trim());
