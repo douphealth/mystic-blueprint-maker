@@ -1,18 +1,19 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Lock, FileText, Heart, TrendingUp, Compass, Lightbulb, Download, Star, Loader2 } from "lucide-react";
+import { Lock, Heart, TrendingUp, Compass, Lightbulb, Download, Star, Loader2, Zap, Layers } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const premiumModules = [
-  { icon: Compass, title: "Full Blueprint Reading", desc: "All 6 core numbers with deep interpretations and life guidance" },
-  { icon: Star, title: "Core Energies & Strengths", desc: "Your dominant vibrations and how to harness them" },
-  { icon: TrendingUp, title: "Shadow Patterns", desc: "Hidden challenges and karmic lessons to resolve" },
-  { icon: Lightbulb, title: "Growth Themes", desc: "Your soul's evolution path and next breakthrough" },
-  { icon: Heart, title: "Relationship Tendencies", desc: "Love patterns, ideal partners, and red flags" },
-  { icon: FileText, title: "Practical Prompts", desc: "Actionable exercises and reflections for your numbers" },
-  { icon: Download, title: "Printable Blueprint PDF", desc: "Beautiful 25-page report — yours forever" },
+  { icon: Compass, title: "Deep Shadow Pattern Analysis", desc: "Uncover hidden sabotage patterns, blind spots, and karmic wounds blocking your growth" },
+  { icon: Heart, title: "Relationship Compatibility Map", desc: "Love patterns, ideal partner vibrations, red flags, and how to attract your soul match" },
+  { icon: Layers, title: "Life Phase Map (Pinnacles & Challenges)", desc: "4 Pinnacles + 4 Challenges with exact age ranges and guidance for each phase" },
+  { icon: Star, title: "Personalized Lucky Codes", desc: "Your power colors, crystals, affirmations, and optimal days calibrated to your numbers" },
+  { icon: Lightbulb, title: "Career & Purpose Alignment", desc: "Specific career paths, business ideas, and purpose work aligned with your vibration" },
+  { icon: TrendingUp, title: "Growth Acceleration Prompts", desc: "Actionable exercises, journal prompts, and rituals personalized for your exact blueprint" },
+  { icon: Zap, title: "Annual Forecast Deep Dive", desc: "Month-by-month strategic guidance with peak timing for major life decisions" },
+  { icon: Download, title: "Premium 25-Page Blueprint PDF", desc: "Museum-quality printable report — a keepsake you'll reference for years" },
 ];
 
 const PremiumPaywall = () => {
@@ -54,16 +55,16 @@ const PremiumPaywall = () => {
           whileInView={{ scale: 1 }}
           viewport={{ once: true }}
           transition={{ type: "spring", stiffness: 200 }}
-          className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 border border-primary/20 mb-4"
+          className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 border border-primary/20 mb-4"
         >
-          <Lock className="w-6 h-6 text-primary" />
+          <Lock className="w-7 h-7 text-primary" />
         </motion.div>
         <h2 className="font-display text-2xl md:text-3xl text-gradient-gold mb-3">
-          Complete Mystical Blueprint
+          Go Deeper — Complete Mystical Blueprint
         </h2>
         <p className="font-body text-base text-foreground/60 max-w-md mx-auto leading-relaxed">
-          Your free reading covered 3 core numbers. The Complete Blueprint goes deeper — 
-          with shadow patterns, growth themes, relationship insights, and a printable PDF.
+          You've seen all 6 core numbers. The Complete Blueprint takes you 10× deeper —
+          with shadow analysis, relationship mapping, life phase guidance, lucky codes, and a premium PDF.
         </p>
       </div>
 
@@ -78,7 +79,7 @@ const PremiumPaywall = () => {
             transition={{ delay: i * 0.06 }}
             className="flex items-center gap-3.5 rounded-lg p-3.5 border border-border/30 bg-muted/10 group hover:border-primary/20 transition-colors"
           >
-            <div className="w-9 h-9 rounded-lg bg-primary/8 border border-primary/15 flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/15 flex items-center justify-center flex-shrink-0">
               <mod.icon className="w-4 h-4 text-primary/70" />
             </div>
             <div className="flex-1 min-w-0">
@@ -99,21 +100,21 @@ const PremiumPaywall = () => {
           transition={{ delay: 0.4 }}
         >
           <Button
-            className="h-13 px-12 text-sm font-display tracking-[0.15em] uppercase bg-primary text-primary-foreground hover:bg-gold-light border-0 shadow-gold transition-all duration-300"
+            className="h-14 px-14 text-sm font-display tracking-[0.15em] uppercase bg-primary text-primary-foreground hover:bg-gold-light border-0 shadow-gold transition-all duration-300"
             onClick={handleUnlock}
             disabled={loading}
           >
             {loading ? (
               <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing…</>
             ) : (
-              "Unlock for $7.99"
+              "Unlock Complete Blueprint — $7.99"
             )}
           </Button>
           <p className="font-ui text-[10px] text-muted-foreground mt-3 tracking-wider">
             One-time payment · Instant access · Lifetime updates
           </p>
           <p className="font-ui text-[10px] text-muted-foreground/50 mt-1">
-            Personalized blueprint built from your exact name and birth date
+            Built from your exact name and birth date — not generic
           </p>
         </motion.div>
       </div>
@@ -123,12 +124,12 @@ const PremiumPaywall = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background z-10" />
         <div className="filter blur-sm opacity-30 pointer-events-none space-y-3">
           <div className="bg-card-gradient rounded-xl p-6 border border-border/20">
-            <h3 className="font-display text-base text-foreground">Shadow Patterns & Karmic Lessons</h3>
-            <p className="font-body text-sm text-foreground/40 mt-2">Your karmic numbers reveal deep patterns that continue to influence your current journey. The presence of karmic debt suggests unresolved lessons from previous cycles…</p>
+            <h3 className="font-display text-base text-foreground">Shadow Patterns & Karmic Wounds</h3>
+            <p className="font-body text-sm text-foreground/40 mt-2">Your shadow analysis reveals deep subconscious patterns that have been silently sabotaging your relationships, career, and personal growth. The specific interplay between your Life Path and Personality creates…</p>
           </div>
           <div className="bg-card-gradient rounded-xl p-6 border border-border/20">
-            <h3 className="font-display text-base text-foreground">Relationship Tendencies</h3>
-            <p className="font-body text-sm text-foreground/40 mt-2">Based on your complete numerological profile, your ideal romantic partner carries specific vibrational frequencies that complement and balance your energy…</p>
+            <h3 className="font-display text-base text-foreground">Relationship Compatibility Blueprint</h3>
+            <p className="font-body text-sm text-foreground/40 mt-2">Based on your complete numerological profile, your ideal romantic partner carries vibrational frequencies that complement your specific energy pattern. Your Soul Urge combined with your Personality reveals…</p>
           </div>
         </div>
       </div>
