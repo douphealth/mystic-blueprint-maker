@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import GuidedIntake from "@/components/GuidedIntake";
 import EmailGate from "@/components/EmailGate";
