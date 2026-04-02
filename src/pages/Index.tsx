@@ -133,7 +133,8 @@ const Index = () => {
     const su = getInterpretation("soulUrge", profile.soulUrge)!;
     const pe = getInterpretation("personality", profile.personality)!;
     const py = getInterpretation("personalYear", profile.personalYear)!;
-    const bd = birthdayInterpretations[profile.birthday] || birthdayInterpretations[1];
+    const bdText = birthdayInterpretations[profile.birthday] || birthdayInterpretations[1];
+    const bd = { title: `Day ${profile.birthday}`, keywords: ["Birthday Energy", "Natural Gift", "Special Talent"], shortDesc: bdText.split('.')[0] + '.', fullText: bdText };
 
     return (
       <div className="min-h-screen bg-background">
