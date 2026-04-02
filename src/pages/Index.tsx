@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import GuidedIntake from "@/components/GuidedIntake";
+import EmailGate from "@/components/EmailGate";
 import NumberReveal from "@/components/NumberReveal";
 import NumerologySection from "@/components/NumerologySection";
 import ConstellationChart from "@/components/ConstellationChart";
@@ -13,8 +14,10 @@ import PremiumPaywall from "@/components/PremiumPaywall";
 import FloatingParticles from "@/components/FloatingParticles";
 import { calculateFullProfile, type NumerologyProfile } from "@/lib/numerology";
 import { getInterpretation, birthdayInterpretations } from "@/lib/interpretations";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
-type Phase = "landing" | "calculating" | "revealing" | "results";
+type Phase = "landing" | "email-gate" | "calculating" | "revealing" | "results";
 
 const loadingSteps = [
   "Mapping your birth numbers…",
@@ -25,12 +28,30 @@ const loadingSteps = [
 ];
 
 const Index = () => {
+  const { user } = useAuth();
   const [profile, setProfile] = useState<NumerologyProfile | null>(null);
   const [userName, setUserName] = useState("");
+  const [userDob, setUserDob] = useState<Date | null>(null);
   const [phase, setPhase] = useState<Phase>("landing");
   const [loadingStep, setLoadingStep] = useState(0);
 
   const handleSubmit = (name: string, dob: Date) => {
+    setUserName(name.trim());
+    setUserDob(dob);
+    if (user) {
+      startCalculation(name.trim(), dob);
+    } else {
+      setPhase("email-gate");
+    }
+  };
+
+  const handleEmailComplete = (_email: string) => {
+    if (userName && userDob) {
+      startCalculation(userName, userDob);
+    }
+  };
+
+  const startCalculation = (name: string, dob: Date) => {
     setPhase("calculating");
     setLoadingStep(0);
 
@@ -43,12 +64,32 @@ const Index = () => {
 
     setTimeout(() => {
       clearInterval(stepInterval);
-      setProfile(calculateFullProfile(name, dob));
-      setUserName(name);
+      const calculatedProfile = calculateFullProfile(name, dob);
+      setProfile(calculatedProfile);
       setPhase("revealing");
       setTimeout(() => setPhase("results"), 1200);
+
+      // Save reading if authenticated
+      if (user) {
+        supabase.from("saved_readings").insert([{
+          user_id: user.id,
+          full_name: name,
+          birth_date: dob.toISOString().split("T")[0],
+          reading_data: JSON.parse(JSON.stringify(calculatedProfile)),
+        }]).then(() => {});
+      }
     }, 3800);
   };
+
+  // ── Email Gate ──
+  if (phase === "email-gate") {
+    return (
+      <div className="min-h-screen bg-background">
+        <FloatingParticles />
+        <EmailGate userName={userName} onComplete={handleEmailComplete} />
+      </div>
+    );
+  }
 
   // ── Calculating ──
   if (phase === "calculating") {
