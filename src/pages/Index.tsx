@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import GuidedIntake from "@/components/GuidedIntake";
+import EmailGate from "@/components/EmailGate";
 import NumberReveal from "@/components/NumberReveal";
 import NumerologySection from "@/components/NumerologySection";
 import ConstellationChart from "@/components/ConstellationChart";
@@ -13,8 +14,10 @@ import PremiumPaywall from "@/components/PremiumPaywall";
 import FloatingParticles from "@/components/FloatingParticles";
 import { calculateFullProfile, type NumerologyProfile } from "@/lib/numerology";
 import { getInterpretation, birthdayInterpretations } from "@/lib/interpretations";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
-type Phase = "landing" | "calculating" | "revealing" | "results";
+type Phase = "landing" | "email-gate" | "calculating" | "revealing" | "results";
 
 const loadingSteps = [
   "Mapping your birth numbers…",
