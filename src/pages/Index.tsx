@@ -5,6 +5,10 @@ import NumberReveal from "@/components/NumberReveal";
 import NumerologySection from "@/components/NumerologySection";
 import ConstellationChart from "@/components/ConstellationChart";
 import SummaryDashboard from "@/components/SummaryDashboard";
+import MonthlyForecast from "@/components/MonthlyForecast";
+import CoreInsights from "@/components/CoreInsights";
+import EnergyProfile from "@/components/EnergyProfile";
+import FreePdfButton from "@/components/FreePdfButton";
 import PremiumPaywall from "@/components/PremiumPaywall";
 import FloatingParticles from "@/components/FloatingParticles";
 import { calculateFullProfile, type NumerologyProfile } from "@/lib/numerology";
@@ -16,6 +20,7 @@ const loadingSteps = [
   "Mapping your birth numbers…",
   "Decoding your name vibration…",
   "Aligning cosmic frequencies…",
+  "Weaving your energy signature…",
   "Revealing your blueprint…",
 ];
 
@@ -42,7 +47,7 @@ const Index = () => {
       setUserName(name);
       setPhase("revealing");
       setTimeout(() => setPhase("results"), 1200);
-    }, 3000);
+    }, 3800);
   };
 
   // ── Calculating ──
@@ -51,7 +56,7 @@ const Index = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <FloatingParticles />
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center relative z-10">
-          <div className="relative w-28 h-28 mx-auto mb-10">
+          <div className="relative w-32 h-32 mx-auto mb-10">
             <motion.div
               className="absolute inset-0 rounded-full border border-primary/20"
               animate={{ rotate: 360 }}
@@ -60,19 +65,20 @@ const Index = () => {
               {[0, 60, 120, 180, 240, 300].map((deg) => (
                 <motion.div
                   key={deg}
-                  className="absolute w-1.5 h-1.5 rounded-full bg-primary/60"
-                  style={{ left: "50%", top: 0, marginLeft: -3, marginTop: -3, transformOrigin: "3px 56px", transform: `rotate(${deg}deg)` }}
-                  animate={{ opacity: [0.3, 1, 0.3] }}
+                  className="absolute w-2 h-2 rounded-full bg-primary/60"
+                  style={{ left: "50%", top: 0, marginLeft: -4, marginTop: -4, transformOrigin: "4px 64px", transform: `rotate(${deg}deg)` }}
+                  animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.3, 0.8] }}
                   transition={{ duration: 1.5, delay: deg / 360, repeat: Infinity }}
                 />
               ))}
             </motion.div>
             <motion.div className="absolute inset-4 rounded-full border border-accent/25" style={{ borderStyle: "dashed" }} animate={{ rotate: -360 }} transition={{ duration: 4, repeat: Infinity, ease: "linear" }} />
             <motion.div className="absolute inset-8 rounded-full border border-primary/40" animate={{ rotate: 360 }} transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }} />
+            <motion.div className="absolute inset-12 rounded-full border border-mystic-teal/20" animate={{ rotate: -360 }} transition={{ duration: 3.5, repeat: Infinity, ease: "linear" }} style={{ borderStyle: "dotted" }} />
             <div className="absolute inset-0 flex items-center justify-center">
               <motion.div
-                className="w-4 h-4 rounded-full bg-primary"
-                animate={{ scale: [1, 1.5, 1], opacity: [0.6, 1, 0.6], boxShadow: ["0 0 10px hsl(var(--gold) / 0.3)", "0 0 30px hsl(var(--gold) / 0.6)", "0 0 10px hsl(var(--gold) / 0.3)"] }}
+                className="w-5 h-5 rounded-full bg-primary"
+                animate={{ scale: [1, 1.6, 1], opacity: [0.6, 1, 0.6], boxShadow: ["0 0 10px hsl(var(--gold) / 0.3)", "0 0 40px hsl(var(--gold) / 0.7)", "0 0 10px hsl(var(--gold) / 0.3)"] }}
                 transition={{ duration: 2, repeat: Infinity }}
               />
             </div>
@@ -81,7 +87,7 @@ const Index = () => {
                 key={i}
                 className="absolute inset-0 rounded-full border border-primary/20"
                 initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: [0.5, 1.8], opacity: [0.4, 0] }}
+                animate={{ scale: [0.5, 2], opacity: [0.5, 0] }}
                 transition={{ duration: 2.5, delay: i * 0.8, repeat: Infinity, ease: "easeOut" }}
               />
             ))}
@@ -92,9 +98,9 @@ const Index = () => {
               {loadingSteps[loadingStep]}
             </motion.p>
           </AnimatePresence>
-          <div className="flex justify-center gap-2 mt-4">
+          <div className="flex justify-center gap-2 mt-5">
             {loadingSteps.map((_, i) => (
-              <motion.div key={i} className="w-1.5 h-1.5 rounded-full" animate={{ backgroundColor: i <= loadingStep ? "hsl(var(--gold))" : "hsl(var(--muted))", scale: i === loadingStep ? 1.3 : 1 }} transition={{ duration: 0.3 }} />
+              <motion.div key={i} className="w-1.5 h-1.5 rounded-full" animate={{ backgroundColor: i <= loadingStep ? "hsl(var(--gold))" : "hsl(var(--muted))", scale: i === loadingStep ? 1.4 : 1 }} transition={{ duration: 0.3 }} />
             ))}
           </div>
         </motion.div>
@@ -109,11 +115,11 @@ const Index = () => {
         <FloatingParticles />
         <motion.div className="text-center relative z-10">
           <motion.div initial={{ scale: 0, opacity: 0 }} animate={{ scale: [0, 1.2, 1], opacity: [0, 1, 1] }} transition={{ duration: 0.8 }} className="mb-6">
-            <div className="w-20 h-20 mx-auto rounded-full border-2 border-primary flex items-center justify-center shadow-gold">
-              <span className="font-display text-3xl text-primary font-bold">{profile?.lifePath}</span>
+            <div className="w-24 h-24 mx-auto rounded-full border-2 border-primary flex items-center justify-center shadow-gold">
+              <span className="font-display text-4xl text-primary font-bold">{profile?.lifePath}</span>
             </div>
           </motion.div>
-          <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="font-display text-xl text-gradient-gold">{userName}'s Blueprint</motion.p>
+          <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="font-display text-2xl text-gradient-gold">{userName}'s Blueprint</motion.p>
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 0.5 }} transition={{ delay: 0.6 }} className="font-ui text-xs text-muted-foreground mt-2 tracking-wider">Your numbers have been revealed</motion.p>
         </motion.div>
       </div>
@@ -128,7 +134,6 @@ const Index = () => {
     const pe = getInterpretation("personality", profile.personality)!;
     const py = getInterpretation("personalYear", profile.personalYear)!;
     const bd = birthdayInterpretations[profile.birthday] || birthdayInterpretations[1];
-    const firstName = userName.split(" ")[0];
 
     return (
       <div className="min-h-screen bg-background">
@@ -136,7 +141,7 @@ const Index = () => {
         <div className="relative z-10 max-w-3xl mx-auto px-5 py-10 md:py-16">
           {/* Header */}
           <motion.header className="text-center mb-10">
-            <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 1, delay: 0.2 }} className="h-px w-16 bg-gradient-to-r from-transparent via-primary/50 to-transparent mx-auto mb-4 origin-center" />
+            <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 1, delay: 0.2 }} className="h-px w-20 bg-gradient-to-r from-transparent via-primary/50 to-transparent mx-auto mb-4 origin-center" />
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1 }} className="font-ui text-[10px] tracking-[0.4em] uppercase text-muted-foreground mb-3">
               The Numerology Blueprint of
             </motion.p>
@@ -148,86 +153,72 @@ const Index = () => {
             >
               {userName}
             </motion.h1>
-            <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 1, delay: 0.5 }} className="h-px w-16 bg-gradient-to-r from-transparent via-primary/50 to-transparent mx-auto mt-4 origin-center" />
+            <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 1, delay: 0.5 }} className="h-px w-20 bg-gradient-to-r from-transparent via-primary/50 to-transparent mx-auto mt-4 origin-center" />
           </motion.header>
 
-          {/* Free reading badge */}
+          {/* Comprehensive Free Reading badge */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
             className="text-center mb-8"
           >
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 font-ui text-[10px] tracking-wider uppercase text-primary">
-              ✦ Free Reading — 3 Core Numbers
+            <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 font-ui text-[10px] tracking-wider uppercase text-primary">
+              ✦ Complete Free Reading — All 6 Core Numbers + Insights
             </span>
           </motion.div>
 
-          {/* Number grid */}
+          {/* All 6 numbers — UNLOCKED */}
           <div className="grid grid-cols-3 gap-3 md:grid-cols-6 md:gap-4 mb-14">
             <NumberReveal number={profile.lifePath} label="Life Path" delay={0.1} />
             <NumberReveal number={profile.expression} label="Destiny" delay={0.2} />
             <NumberReveal number={profile.soulUrge} label="Soul Urge" delay={0.3} />
-            <NumberReveal number={profile.personality} label="Persona" delay={0.4} locked />
-            <NumberReveal number={profile.birthday} label="Birthday" delay={0.5} locked />
-            <NumberReveal number={profile.personalYear} label={`${new Date().getFullYear()}`} delay={0.6} locked />
+            <NumberReveal number={profile.personality} label="Persona" delay={0.4} />
+            <NumberReveal number={profile.birthday} label="Birthday" delay={0.5} />
+            <NumberReveal number={profile.personalYear} label={`${new Date().getFullYear()}`} delay={0.6} />
           </div>
 
-          {/* FREE: 3 Core Number Sections */}
+          {/* ALL 6 Core Number Interpretations */}
           <div className="space-y-6">
             <NumerologySection icon="✦" number={profile.lifePath} interpretation={lp} index={0} />
             <NumerologySection icon="◆" number={profile.expression} interpretation={ex} index={1} />
             <NumerologySection icon="♡" number={profile.soulUrge} interpretation={su} index={2} />
+            <NumerologySection icon="◈" number={profile.personality} interpretation={pe} index={3} />
+            <NumerologySection icon="❋" number={profile.birthday} interpretation={bd} index={4} />
+            <NumerologySection icon="☽" number={profile.personalYear} interpretation={py} index={5} />
+          </div>
+
+          {/* Energy Signature */}
+          <div className="my-10">
+            <EnergyProfile profile={profile} name={userName} />
           </div>
 
           {/* Constellation (free) */}
-          <div className="my-14">
+          <div className="my-10">
             <ConstellationChart profile={profile} name={userName} />
           </div>
 
           {/* Summary (free) */}
-          <div className="mb-14">
+          <div className="mb-10">
             <SummaryDashboard profile={profile} name={userName} />
           </div>
 
-          {/* ── LOCKED PREMIUM SECTIONS ── */}
-          <div className="space-y-4 mb-10">
-            {[
-              { icon: "◈", label: "Personality", title: pe.title, number: profile.personality },
-              { icon: "❋", label: "Birthday Number", title: `Day ${profile.birthday}`, number: profile.birthday },
-              { icon: "☽", label: `${new Date().getFullYear()} Forecast`, title: py.title, number: profile.personalYear },
-            ].map((item, i) => (
-              <motion.div
-                key={item.label}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="relative bg-card-gradient rounded-xl border border-border/30 p-5 overflow-hidden"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-primary/60">{item.icon}</span>
-                    <div>
-                      <h3 className="font-display text-base text-foreground">{item.label} <span className="text-primary">{item.number}</span></h3>
-                      <p className="font-body text-sm text-muted-foreground">{item.title}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-ui text-[9px] tracking-wider uppercase text-primary/50 border border-primary/20 rounded-full px-2 py-0.5">Premium</span>
-                  </div>
-                </div>
-                {/* Blurred teaser */}
-                <div className="mt-3 filter blur-[6px] opacity-30 pointer-events-none select-none">
-                  <p className="font-body text-sm text-foreground/60 leading-relaxed">
-                    Your {item.label.toLowerCase()} reveals deep patterns that shape how you interact with the world. This number carries powerful vibrations that influence your relationships, career path, and personal growth trajectory…
-                  </p>
-                </div>
-              </motion.div>
-            ))}
+          {/* Hidden Passion + Karmic Debt */}
+          <div className="mb-10">
+            <CoreInsights profile={profile} name={userName} />
           </div>
 
-          {/* Premium Paywall */}
+          {/* Monthly Forecast */}
+          <div className="mb-10">
+            <MonthlyForecast profile={profile} />
+          </div>
+
+          {/* Free PDF Download */}
+          <div className="mb-14">
+            <FreePdfButton profile={profile} name={userName} />
+          </div>
+
+          {/* ── PREMIUM UPSELL ── */}
           <PremiumPaywall />
 
           {/* Footer */}
@@ -275,20 +266,25 @@ const Index = () => {
           transition={{ delay: 0.6, duration: 1 }}
           className="font-body text-lg md:text-xl text-foreground/50 mb-10 leading-relaxed"
         >
-          Uncover your Life Path, Destiny, and Soul Urge numbers — 
-          a free personalized reading in under 2 minutes.
+          Uncover all 6 core numbers — Life Path, Destiny, Soul Urge,
+          Personality, Birthday & Personal Year — in a free, personalized reading.
         </motion.p>
 
         <GuidedIntake onComplete={handleSubmit} />
 
-        <motion.p
+        <motion.div
           initial={{ opacity: 0 }}
-          animate={{ opacity: 0.35 }}
+          animate={{ opacity: 1 }}
           transition={{ delay: 1.5 }}
-          className="font-ui text-[10px] text-muted-foreground mt-8 tracking-wider"
+          className="mt-8 space-y-1"
         >
-          Free · No account required · 3 core numbers revealed
-        </motion.p>
+          <p className="font-ui text-[10px] text-muted-foreground tracking-wider">
+            Free · No account required · All 6 numbers + PDF download
+          </p>
+          <p className="font-ui text-[9px] text-muted-foreground/50 tracking-wider">
+            Trusted by 12,000+ people worldwide
+          </p>
+        </motion.div>
       </div>
     </div>
   );
