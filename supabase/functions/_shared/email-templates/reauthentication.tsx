@@ -22,12 +22,14 @@ export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => 
     <Preview>Your verification code</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Confirm reauthentication</Heading>
+        <Text style={brand}>✦ Your Numerology Blueprint ✦</Text>
+        <Heading style={h1}>Confirm it's you</Heading>
         <Text style={text}>Use the code below to confirm your identity:</Text>
-        <Text style={codeStyle}>{token}</Text>
+        <Text style={otp}>{token}</Text>
+        <div style={divider} />
         <Text style={footer}>
-          This code will expire shortly. If you didn't request this, you can
-          safely ignore this email.
+          This code expires shortly. If you didn't request this, ignore this email.<br />
+          © {new Date().getFullYear()} Mystical Digits · mysticaldigits.com
         </Text>
       </Container>
     </Body>
