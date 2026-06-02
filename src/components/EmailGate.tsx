@@ -1,9 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mail, Sparkles, CheckCircle, ArrowRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+
+const MAGIC_LINK_COOLDOWN_MS = 90_000;
+const LAST_MAGIC_LINK_KEY = "mysticaldigits:last_magic_link_request";
 
 interface EmailGateProps {
   userName: string;
@@ -18,6 +21,7 @@ const EmailGate = ({ userName, onComplete }: EmailGateProps) => {
   const [sending, setSending] = useState(false);
   const [retryAt, setRetryAt] = useState<number | null>(null);
   const [secondsRemaining, setSecondsRemaining] = useState(0);
+  const submitLockedRef = useRef(false);
 
   const firstName = userName.split(" ")[0];
   const isCoolingDown = secondsRemaining > 0;
@@ -37,14 +41,35 @@ const EmailGate = ({ userName, onComplete }: EmailGateProps) => {
   }, [retryAt]);
 
   const handleSubmit = async () => {
-    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (submitLockedRef.current || sending || isCoolingDown) return;
+
+    if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       setError("Please enter a valid email address");
       return;
     }
+
+    try {
+      const lastRequest = window.localStorage.getItem(LAST_MAGIC_LINK_KEY);
+      if (lastRequest) {
+        const { email: lastEmail, requestedAt } = JSON.parse(lastRequest) as { email?: string; requestedAt?: number };
+        const cooldownUntil = (requestedAt ?? 0) + MAGIC_LINK_COOLDOWN_MS;
+        if (lastEmail === normalizedEmail && cooldownUntil > Date.now()) {
+          setRetryAt(cooldownUntil);
+          setError("We already sent your private access link. Please check your inbox and spam folder before requesting another.");
+          return;
+        }
+      }
+    } catch {
+      window.localStorage.removeItem(LAST_MAGIC_LINK_KEY);
+    }
+
+    submitLockedRef.current = true;
     setError("");
     setSending(true);
 
-    const { error: authError } = await signInWithMagicLink(email.trim(), userName);
+    const { error: authError } = await signInWithMagicLink(normalizedEmail, userName);
 
     if (authError) {
       const errorDetails = authError as Error & { status?: number; code?: string };
@@ -54,20 +79,26 @@ const EmailGate = ({ userName, onComplete }: EmailGateProps) => {
         errorDetails.message?.toLowerCase().includes("rate limit");
 
       if (isRateLimit) {
-        setRetryAt(Date.now() + 60_000);
-        setError("Your secure link was requested too many times. Please wait 60 seconds, then send a fresh magic link.");
+        setRetryAt(Date.now() + MAGIC_LINK_COOLDOWN_MS);
+        setError("A private access link was just requested. Please check your inbox and spam folder, then try again shortly if it has not arrived.");
       } else {
         setError("We couldn't send your secure link. Please check your email and try again.");
       }
+      submitLockedRef.current = false;
       setSending(false);
       return;
     }
 
     setSent(true);
     setSending(false);
+    submitLockedRef.current = false;
+    window.localStorage.setItem(
+      LAST_MAGIC_LINK_KEY,
+      JSON.stringify({ email: normalizedEmail, requestedAt: Date.now() })
+    );
 
     // Let user proceed immediately — magic link creates account in background
-    setTimeout(() => onComplete(email.trim()), 1800);
+    setTimeout(() => onComplete(normalizedEmail), 1800);
   };
 
   return (
@@ -131,7 +162,9 @@ const EmailGate = ({ userName, onComplete }: EmailGateProps) => {
                     placeholder="your@email.com"
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); setError(""); }}
-                    onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !sending && !isCoolingDown) handleSubmit();
+                    }}
                     autoFocus
                     className="bg-card/60 border-border/60 text-foreground font-body text-lg placeholder:text-muted-foreground/30 focus:border-primary focus:ring-primary/20 h-14 text-center pl-10 tracking-wide"
                   />
