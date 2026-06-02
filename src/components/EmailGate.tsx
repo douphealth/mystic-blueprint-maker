@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,7 @@ const EmailGate = ({ userName, onComplete }: EmailGateProps) => {
   const [sending, setSending] = useState(false);
   const [retryAt, setRetryAt] = useState<number | null>(null);
   const [secondsRemaining, setSecondsRemaining] = useState(0);
+  const submitLockedRef = useRef(false);
 
   const firstName = userName.split(" ")[0];
   const isCoolingDown = secondsRemaining > 0;
@@ -42,24 +43,29 @@ const EmailGate = ({ userName, onComplete }: EmailGateProps) => {
   const handleSubmit = async () => {
     const normalizedEmail = email.trim().toLowerCase();
 
-    if (sending || isCoolingDown) return;
+    if (submitLockedRef.current || sending || isCoolingDown) return;
 
     if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       setError("Please enter a valid email address");
       return;
     }
 
-    const lastRequest = window.localStorage.getItem(LAST_MAGIC_LINK_KEY);
-    if (lastRequest) {
-      const { email: lastEmail, requestedAt } = JSON.parse(lastRequest) as { email?: string; requestedAt?: number };
-      const cooldownUntil = (requestedAt ?? 0) + MAGIC_LINK_COOLDOWN_MS;
-      if (lastEmail === normalizedEmail && cooldownUntil > Date.now()) {
-        setRetryAt(cooldownUntil);
-        setError("We already sent your private access link. Please check your inbox and spam folder before requesting another.");
-        return;
+    try {
+      const lastRequest = window.localStorage.getItem(LAST_MAGIC_LINK_KEY);
+      if (lastRequest) {
+        const { email: lastEmail, requestedAt } = JSON.parse(lastRequest) as { email?: string; requestedAt?: number };
+        const cooldownUntil = (requestedAt ?? 0) + MAGIC_LINK_COOLDOWN_MS;
+        if (lastEmail === normalizedEmail && cooldownUntil > Date.now()) {
+          setRetryAt(cooldownUntil);
+          setError("We already sent your private access link. Please check your inbox and spam folder before requesting another.");
+          return;
+        }
       }
+    } catch {
+      window.localStorage.removeItem(LAST_MAGIC_LINK_KEY);
     }
 
+    submitLockedRef.current = true;
     setError("");
     setSending(true);
 
@@ -78,12 +84,14 @@ const EmailGate = ({ userName, onComplete }: EmailGateProps) => {
       } else {
         setError("We couldn't send your secure link. Please check your email and try again.");
       }
+      submitLockedRef.current = false;
       setSending(false);
       return;
     }
 
     setSent(true);
     setSending(false);
+    submitLockedRef.current = false;
     window.localStorage.setItem(
       LAST_MAGIC_LINK_KEY,
       JSON.stringify({ email: normalizedEmail, requestedAt: Date.now() })
