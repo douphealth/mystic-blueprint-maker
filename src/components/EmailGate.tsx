@@ -84,7 +84,7 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
                 transition={{ delay: 0.4 }}
                 className="font-body text-lg text-muted-foreground mb-2 leading-relaxed"
               >
-                Enter your email to unlock your complete reading — including a downloadable PDF blueprint.
+                Enter your email to unlock the full reading and your premium PDF workbook — a beautiful action guide you can save, print, and use this week.
               </motion.p>
 
               <motion.p
@@ -93,7 +93,7 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
                 transition={{ delay: 0.5 }}
                 className="font-ui text-[10px] text-muted-foreground/60 tracking-wider mb-8"
               >
-                We’ll email your cosmic starter guide, number meanings, and next-step ritual — no Lovable dependency, no spam.
+                You’ll get a polished welcome guide plus instant access to download the free PDF after capture. Private, useful, and standalone — no Lovable required.
               </motion.p>
 
               <motion.div
@@ -131,7 +131,7 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
                     </>
                   ) : (
                     <>
-                      Email My Blueprint + Reveal Results
+                      Unlock My Free Blueprint + PDF
                       <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                     </>
                   )}
@@ -166,13 +166,13 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
               </motion.div>
 
               <h2 className="font-display text-2xl text-gradient-gold mb-3">
-                Magic link sent!
+                Your blueprint is unlocked!
               </h2>
               <p className="font-body text-lg text-muted-foreground mb-2">
-                Check <span className="text-foreground">{email}</span> to save your reading.
+                We emailed <span className="text-foreground">{email}</span> your premium starter guide.
               </p>
               <p className="font-body text-base text-muted-foreground/60">
-                Revealing your blueprint now…
+                Opening your reading now — your Download Free Blueprint PDF button appears on the results page.
               </p>
 
               <motion.div
