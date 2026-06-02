@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,8 +16,25 @@ const EmailGate = ({ userName, onComplete }: EmailGateProps) => {
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
+  const [retryAt, setRetryAt] = useState<number | null>(null);
+  const [secondsRemaining, setSecondsRemaining] = useState(0);
 
   const firstName = userName.split(" ")[0];
+  const isCoolingDown = secondsRemaining > 0;
+
+  useEffect(() => {
+    if (!retryAt) return;
+
+    const tick = () => {
+      const nextSeconds = Math.max(0, Math.ceil((retryAt - Date.now()) / 1000));
+      setSecondsRemaining(nextSeconds);
+      if (nextSeconds === 0) setRetryAt(null);
+    };
+
+    tick();
+    const interval = window.setInterval(tick, 1000);
+    return () => window.clearInterval(interval);
+  }, [retryAt]);
 
   const handleSubmit = async () => {
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -30,7 +47,18 @@ const EmailGate = ({ userName, onComplete }: EmailGateProps) => {
     const { error: authError } = await signInWithMagicLink(email.trim(), userName);
 
     if (authError) {
-      setError("Something went wrong. Please try again.");
+      const errorDetails = authError as Error & { status?: number; code?: string };
+      const isRateLimit =
+        errorDetails.status === 429 ||
+        errorDetails.code === "over_email_send_rate_limit" ||
+        errorDetails.message?.toLowerCase().includes("rate limit");
+
+      if (isRateLimit) {
+        setRetryAt(Date.now() + 60_000);
+        setError("Your secure link was requested too many times. Please wait 60 seconds, then send a fresh magic link.");
+      } else {
+        setError("We couldn't send your secure link. Please check your email and try again.");
+      }
       setSending(false);
       return;
     }
@@ -112,7 +140,7 @@ const EmailGate = ({ userName, onComplete }: EmailGateProps) => {
 
                 <Button
                   onClick={handleSubmit}
-                  disabled={sending}
+                  disabled={sending || isCoolingDown}
                   className="w-full h-13 mt-4 text-sm font-display tracking-[0.15em] uppercase bg-primary text-primary-foreground hover:bg-gold-light border-0 shadow-gold transition-all duration-300 group"
                 >
                   {sending ? (
@@ -124,6 +152,8 @@ const EmailGate = ({ userName, onComplete }: EmailGateProps) => {
                       />
                       Sending…
                     </>
+                  ) : isCoolingDown ? (
+                    <>Try again in {secondsRemaining}s</>
                   ) : (
                     <>
                       Reveal My Blueprint
