@@ -29,30 +29,18 @@ export const SignupEmail = ({
 }: SignupEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>Confirm your email for {siteName}</Preview>
+    <Preview>Your personalized numerology blueprint is waiting.</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Confirm your email</Heading>
-        <Text style={text}>
-          Thanks for signing up for{' '}
-          <Link href={siteUrl} style={link}>
-            <strong>{siteName}</strong>
-          </Link>
-          !
-        </Text>
-        <Text style={text}>
-          Please confirm your email address (
-          <Link href={`mailto:${recipient}`} style={link}>
-            {recipient}
-          </Link>
-          ) by clicking the button below:
-        </Text>
+        <Text style={eyebrow}>✦ Your Blueprint Is Ready</Text>
+        <Heading style={h1}>Confirm your email to reveal the full reading.</Heading>
+        <Text style={text}>We finished mapping the core numbers tied to your name and birth date.</Text>
+        <Text style={text}>Confirm <Link href={`mailto:${recipient}`} style={link}>{recipient}</Link> to unlock your reading, save it, and get instant access to your downloadable blueprint.</Text>
         <Button style={button} href={confirmationUrl}>
-          Verify Email
+          Reveal My Blueprint
         </Button>
-        <Text style={footer}>
-          If you didn't create an account, you can safely ignore this email.
-        </Text>
+        <Text style={note}>Sent from <Link href={siteUrl} style={link}>{siteName}</Link>. Your private link expires soon.</Text>
+        <Text style={footer}>If you didn't request this, you can safely ignore this email.</Text>
       </Container>
     </Body>
   </Html>
@@ -60,27 +48,41 @@ export const SignupEmail = ({
 
 export default SignupEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '20px 25px' }
+const main = { backgroundColor: '#ffffff', fontFamily: 'Inter, Arial, sans-serif' }
+const container = { maxWidth: '560px', margin: '0 auto', padding: '40px 28px' }
+const eyebrow = {
+  color: '#B8923A',
+  fontSize: '12px',
+  fontWeight: '700' as const,
+  letterSpacing: '2px',
+  margin: '0 0 14px',
+  textTransform: 'uppercase' as const,
+}
 const h1 = {
-  fontSize: '22px',
-  fontWeight: 'bold' as const,
-  color: '#000000',
-  margin: '0 0 20px',
+  fontFamily: 'Georgia, serif',
+  fontSize: '34px',
+  lineHeight: '1.12',
+  fontWeight: '700' as const,
+  color: '#16162E',
+  margin: '0 0 18px',
 }
 const text = {
-  fontSize: '14px',
-  color: '#55575d',
-  lineHeight: '1.5',
-  margin: '0 0 25px',
+  fontSize: '16px',
+  color: '#3F4058',
+  lineHeight: '1.65',
+  margin: '0 0 18px',
 }
-const link = { color: 'inherit', textDecoration: 'underline' }
+const link = { color: '#B8923A', textDecoration: 'underline' }
 const button = {
-  backgroundColor: '#000000',
+  backgroundColor: '#B8923A',
   color: '#ffffff',
   fontSize: '14px',
-  borderRadius: '8px',
-  padding: '12px 20px',
+  fontWeight: '700' as const,
+  letterSpacing: '1.4px',
+  borderRadius: '6px',
+  padding: '15px 22px',
   textDecoration: 'none',
+  textTransform: 'uppercase' as const,
 }
-const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
+const note = { fontSize: '13px', color: '#6F7088', margin: '20px 0 0' }
+const footer = { fontSize: '12px', color: '#9A9BAA', margin: '30px 0 0' }
