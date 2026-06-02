@@ -2,16 +2,16 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Mail, Sparkles, CheckCircle, ArrowRight } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { Mail, Sparkles, CheckCircle, ArrowRight, ShieldCheck } from "lucide-react";
+import { submitLifePathLead } from "@/lib/lifePathLead";
 
 interface EmailGateProps {
   userName: string;
+  birthDate?: Date | null;
   onComplete: (email: string) => void;
 }
 
-const EmailGate = ({ userName, onComplete }: EmailGateProps) => {
-  const { signInWithMagicLink } = useAuth();
+const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
@@ -27,10 +27,15 @@ const EmailGate = ({ userName, onComplete }: EmailGateProps) => {
     setError("");
     setSending(true);
 
-    const { error: authError } = await signInWithMagicLink(email.trim(), userName);
-
-    if (authError) {
-      setError("Something went wrong. Please try again.");
+    try {
+      await submitLifePathLead({
+        email: email.trim(),
+        fullName: userName,
+        birthDate: birthDate ? birthDate.toISOString().split("T")[0] : undefined,
+      });
+    } catch (leadError) {
+      console.error("Life-path lead capture failed", leadError);
+      setError("We couldn't send the email yet. Please try again in a moment.");
       setSending(false);
       return;
     }
@@ -38,8 +43,8 @@ const EmailGate = ({ userName, onComplete }: EmailGateProps) => {
     setSent(true);
     setSending(false);
 
-    // Let user proceed immediately — magic link creates account in background
-    setTimeout(() => onComplete(email.trim()), 1800);
+    // Let user proceed immediately while the welcome email lands in their inbox.
+    setTimeout(() => onComplete(email.trim()), 900);
   };
 
   return (
@@ -88,7 +93,7 @@ const EmailGate = ({ userName, onComplete }: EmailGateProps) => {
                 transition={{ delay: 0.5 }}
                 className="font-ui text-[10px] text-muted-foreground/60 tracking-wider mb-8"
               >
-                We'll also send a magic link so you can save your reading & access it anytime
+                We’ll email your cosmic starter guide, number meanings, and next-step ritual — no Lovable dependency, no spam.
               </motion.p>
 
               <motion.div
@@ -122,15 +127,21 @@ const EmailGate = ({ userName, onComplete }: EmailGateProps) => {
                         transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                         className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full mr-2"
                       />
-                      Sending…
+                      Sending Your Guide…
                     </>
                   ) : (
                     <>
-                      Reveal My Blueprint
+                      Email My Blueprint + Reveal Results
                       <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                     </>
                   )}
                 </Button>
+
+                <div className="mt-4 grid grid-cols-3 gap-2 text-[10px] font-ui tracking-wide text-muted-foreground/60">
+                  <span className="inline-flex items-center justify-center gap-1 rounded-full border border-border/50 bg-card/40 px-2 py-1"><ShieldCheck className="h-3 w-3 text-primary" />Private</span>
+                  <span className="rounded-full border border-border/50 bg-card/40 px-2 py-1">Helpful</span>
+                  <span className="rounded-full border border-border/50 bg-card/40 px-2 py-1">1-click opt out</span>
+                </div>
 
                 <p className="font-ui text-[9px] text-muted-foreground/50 mt-3 tracking-wider">
                   No spam · Free forever · Unsubscribe anytime

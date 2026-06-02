@@ -93,7 +93,7 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-background">
         <FloatingParticles />
-        <EmailGate userName={userName} onComplete={handleEmailComplete} />
+        <EmailGate userName={userName} birthDate={userDob} onComplete={handleEmailComplete} />
       </div>
     );
   }
