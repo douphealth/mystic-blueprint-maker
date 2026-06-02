@@ -1,6 +1,6 @@
 import * as React from 'npm:react@18.3.1'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
-import { parseEmailWebhookPayload } from 'npm:@lovable.dev/email-js'
+import { parseEmailWebhookPayload, sendLovableEmail } from 'npm:@lovable.dev/email-js'
 import { WebhookError, verifyWebhookRequest } from 'npm:@lovable.dev/webhooks-js'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { SignupEmail } from '../_shared/email-templates/signup.tsx'
@@ -17,12 +17,12 @@ const corsHeaders = {
 }
 
 const EMAIL_SUBJECTS: Record<string, string> = {
-  signup: 'Confirm your email',
-  invite: "You've been invited",
-  magiclink: 'Your login link',
-  recovery: 'Reset your password',
-  email_change: 'Confirm your new email',
-  reauthentication: 'Your verification code',
+  signup: 'Your blueprint is ready — confirm to reveal it',
+  invite: 'Your private numerology invite is here',
+  magiclink: 'Your numerology blueprint is ready to reveal',
+  recovery: 'Reset access to your blueprint',
+  email_change: 'Confirm your new blueprint email',
+  reauthentication: 'Your private verification code',
 }
 
 // Template mapping
@@ -36,10 +36,10 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "mystic-blueprint-maker"
+const SITE_NAME = "Your Numerology Blueprint"
 const SENDER_DOMAIN = "notify.mysticaldigits.com"
 const ROOT_DOMAIN = "mysticaldigits.com"
-const FROM_DOMAIN = "mysticaldigits.com" // Domain shown in From address (may be root or sender subdomain)
+const FROM_DOMAIN = "notify.mysticaldigits.com" // Domain shown in From address (may be root or sender subdomain)
 
 // Sample data for preview mode ONLY (not used in actual email sending).
 // URLs are baked in at scaffold time from the project's real data.
