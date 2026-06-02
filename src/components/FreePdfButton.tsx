@@ -194,6 +194,82 @@ const FreePdfButton = ({ profile, name }: FreePdfButtonProps) => {
     text("Credibility note: numerology is a symbolic reflection system. Use it to ask better questions, notice patterns, and take grounded action. It is not medical, legal, financial, or psychological advice.", 8, muted);
     footer();
 
+
+
+    // Premium synthesis page
+    newPage("Your Personal Operating System");
+    text("Use this page when you need a fast, grounded answer. Your numbers are not separate facts; together they form a practical operating system for decisions, relationships, work, energy, and timing.", 10, pearl);
+    card("Core drive", `Life Path ${profile.lifePath}: the recurring lesson and growth pattern that keeps asking for maturity.`, gold);
+    card("Natural gift", `Expression ${profile.expression}: the talent channel that becomes stronger when it is practiced, packaged, and shared.`, teal);
+    card("Inner fuel", `Soul Urge ${profile.soulUrge}: the private motivation that must be honored for decisions to feel emotionally clean.`, lavender);
+    card("Social signal", `Personality ${profile.personality}: the first impression and energetic style people often meet before they know your deeper story.`, gold);
+    card("Timing", `Personal Year ${profile.personalYear} + Personal Month ${profile.personalMonth}: the season you are in now; use it to choose the right pace and pressure level.`, teal);
+    footer();
+
+    // Decision filter
+    newPage("Premium Decision Filter");
+    text("Before saying yes, buying, quitting, launching, replying, committing, or delaying, run the decision through these five filters.", 10, pearl);
+    [
+      ["1. Alignment", "Does this strengthen my Life Path lesson or repeat an old shadow pattern?"],
+      ["2. Energy", "Does my Soul Urge feel nourished, or am I performing for approval?"],
+      ["3. Expression", "Will this let my gifts become more useful, visible, or refined?"],
+      ["4. Timing", "Does this match the rhythm of my Personal Year/Month, or am I forcing the wrong season?"],
+      ["5. Proof", "What small test can I run within 24–72 hours before overcommitting?"],
+    ].forEach(([title, body]) => card(title, body, title.startsWith("5") ? gold : teal));
+    text("Decision I am evaluating:", 9, pearl, "bold");
+    for (let i=0;i<5;i++){ ensure(8); doc.setDrawColor(85,77,106); doc.line(margin, y, pageW-margin, y); y += 8; }
+    text("My smallest next proof step:", 9, pearl, "bold");
+    for (let i=0;i<4;i++){ ensure(8); doc.setDrawColor(85,77,106); doc.line(margin, y, pageW-margin, y); y += 8; }
+    footer();
+
+    // Shadow to strategy
+    newPage("Shadow → Strategy Map");
+    text("Every number has a high expression and a distorted expression. Use this page to convert friction into a cleaner behavior.", 10, pearl);
+    const shadowRows = [
+      ["When I feel stuck", "Name the repeated emotion or trigger without judging it."],
+      ["The old strategy", "What do I usually do — avoid, chase, control, overgive, overthink, rebel, collapse?"],
+      ["The mature expression", "What would my Life Path look like if it were calm, resourced, and honest?"],
+      ["The 10-minute action", "What action is small enough to do now and meaningful enough to shift the pattern?"],
+    ];
+    shadowRows.forEach(([title, body]) => {
+      text(title, 10, softGold, "bold");
+      text(body, 8.5, muted);
+      for (let i=0;i<3;i++){ ensure(8); doc.setDrawColor(85,77,106); doc.line(margin, y, pageW-margin, y); y += 8; }
+      y += 2;
+    });
+    footer();
+
+    // 30-day activation plan
+    newPage("30-Day Activation Plan");
+    text("Pick one theme for the month. The goal is not to become a different person; it is to make your existing pattern more conscious, useful, beautiful, and grounded.", 10, pearl);
+    const weeks = [
+      ["Week 1 — Notice", "Track where your number shows up naturally: decisions, conflicts, creativity, money, relationships, avoidance."],
+      ["Week 2 — Refine", "Choose one behavior to upgrade: clearer boundary, better routine, braver expression, deeper rest, cleaner completion."],
+      ["Week 3 — Express", "Make it visible: publish, ask, organize, repair, decide, pitch, schedule, create, or finish."],
+      ["Week 4 — Integrate", "Review evidence. Keep what worked, release what was performative, and choose the next grounded practice."],
+    ];
+    weeks.forEach(([w,b]) => card(w,b, w.includes("4") ? gold : teal));
+    text("My 30-day theme:", 9, pearl, "bold");
+    for (let i=0;i<4;i++){ ensure(8); doc.setDrawColor(85,77,106); doc.line(margin, y, pageW-margin, y); y += 8; }
+    footer();
+
+    // Relationship/work prompts
+    newPage("High-Value Reflection Prompts");
+    const prompts = [
+      "Where am I making life harder by ignoring my natural design?",
+      "What do people consistently receive from me — clarity, care, ideas, beauty, structure, courage, insight, leadership?",
+      "What boundary would make my gift easier to trust?",
+      "What opportunity am I calling ‘not the right time’ because it asks me to grow?",
+      "What would premium self-respect look like this week in my calendar, body, home, inbox, money, and relationships?",
+      "What is complete, and what wisdom can I keep without keeping the obligation?",
+    ];
+    prompts.forEach((prompt, idx) => {
+      text(`${idx + 1}. ${prompt}`, 9, softGold, "bold");
+      for (let i=0;i<3;i++){ ensure(8); doc.setDrawColor(85,77,106); doc.line(margin, y, pageW-margin, y); y += 8; }
+      y += 1;
+    });
+    footer();
+
     doc.save(`${name.trim().replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "mysticaldigits"}-premium-life-path-blueprint.pdf`);
     setDone(true);
     setGenerating(false);
@@ -208,10 +284,10 @@ const FreePdfButton = ({ profile, name }: FreePdfButtonProps) => {
       </div>
       <h3 className="font-display text-xl text-gradient-gold mb-2">Download your free premium PDF blueprint</h3>
       <p className="font-body text-sm text-muted-foreground mb-4 max-w-xl mx-auto">
-        A gorgeous multi-page workbook with your number map, interpretations, monthly timing, prompts, rituals, and a 7-day integration plan.
+        A gorgeous premium workbook with your six-number map, interpretations, timing guide, decision filters, shadow-to-strategy map, 30-day activation plan, printable prompts, rituals, and 7-day integration plan.
       </p>
       <Button onClick={generatePdf} disabled={generating} className="h-13 px-6 bg-primary text-primary-foreground hover:bg-gold-light shadow-gold font-display tracking-[0.13em] uppercase">
-        {generating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating Premium PDF…</> : done ? <><CheckCircle className="w-4 h-4 mr-2" />Downloaded</> : <><Download className="w-4 h-4 mr-2" />Download Free Blueprint PDF</>}
+        {generating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating Premium Workbook…</> : done ? <><CheckCircle className="w-4 h-4 mr-2" />Downloaded</> : <><Download className="w-4 h-4 mr-2" />Download Free Blueprint PDF</>}
       </Button>
       <div className="mt-3 flex items-center justify-center gap-2 text-[10px] text-muted-foreground/60 font-ui tracking-wide">
         <FileText className="w-3 h-3" /> PDF generated privately in your browser — no Lovable dependency.

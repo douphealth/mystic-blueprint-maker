@@ -75,7 +75,7 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
                 transition={{ delay: 0.3 }}
                 className="font-display text-2xl md:text-3xl text-gradient-gold mb-3"
               >
-                {firstName}, your blueprint is ready
+                {firstName}, your premium blueprint is ready
               </motion.h2>
 
               <motion.p
@@ -84,7 +84,7 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
                 transition={{ delay: 0.4 }}
                 className="font-body text-lg text-muted-foreground mb-2 leading-relaxed"
               >
-                Enter your email to unlock the full reading and your premium PDF workbook — a beautiful action guide you can save, print, and use this week.
+                Enter your email to unlock the full reading and your premium PDF workbook — a gorgeous, practical guide with decision filters, timing prompts, a 30-day activation plan, and printable reflection pages.
               </motion.p>
 
               <motion.p
@@ -93,7 +93,7 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
                 transition={{ delay: 0.5 }}
                 className="font-ui text-[10px] text-muted-foreground/60 tracking-wider mb-8"
               >
-                You’ll get a polished welcome guide plus instant access to download the free PDF after capture. Private, useful, and standalone — no Lovable required.
+                Instant access after capture: your results, the Download Free Blueprint PDF button, and a high-value email guide showing exactly how to use your numbers this week.
               </motion.p>
 
               <motion.div
@@ -139,7 +139,7 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
 
                 <div className="mt-4 grid grid-cols-3 gap-2 text-[10px] font-ui tracking-wide text-muted-foreground/60">
                   <span className="inline-flex items-center justify-center gap-1 rounded-full border border-border/50 bg-card/40 px-2 py-1"><ShieldCheck className="h-3 w-3 text-primary" />Private</span>
-                  <span className="rounded-full border border-border/50 bg-card/40 px-2 py-1">Helpful</span>
+                  <span className="rounded-full border border-border/50 bg-card/40 px-2 py-1">Premium PDF</span>
                   <span className="rounded-full border border-border/50 bg-card/40 px-2 py-1">1-click opt out</span>
                 </div>
 
@@ -169,7 +169,7 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
                 Your blueprint is unlocked!
               </h2>
               <p className="font-body text-lg text-muted-foreground mb-2">
-                We emailed <span className="text-foreground">{email}</span> your premium starter guide.
+                We emailed <span className="text-foreground">{email}</span> your premium usage guide.
               </p>
               <p className="font-body text-base text-muted-foreground/60">
                 Opening your reading now — your Download Free Blueprint PDF button appears on the results page.
