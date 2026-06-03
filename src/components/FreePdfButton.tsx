@@ -855,13 +855,24 @@ This is not fortune-telling. Treat it as a mirror. Read slowly. Highlight what r
 
     footer("dark", "Continue your journey");
 
+    setGenerationStep("Opening your download…");
     // Save
     const firstName = name.split(" ")[0] || "Your";
     doc.save(`${firstName}-Numerology-Blueprint.pdf`);
 
-    setGenerating(false);
     setDone(true);
     setTimeout(() => setDone(false), 4000);
+    } catch (error) {
+      console.error("PDF generation failed", error);
+      toast({
+        title: "PDF download failed",
+        description: "Your workbook could not be created in this browser session. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setGenerating(false);
+      setGenerationStep("Preparing your workbook…");
+    }
   };
 
   return (
@@ -887,7 +898,7 @@ This is not fortune-telling. Treat it as a mirror. Read slowly. Highlight what r
           {generating ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin text-primary" />
-              Crafting your blueprint…
+              {generationStep}
             </>
           ) : done ? (
             <>
