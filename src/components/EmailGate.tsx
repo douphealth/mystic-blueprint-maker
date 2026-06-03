@@ -66,9 +66,10 @@ const EmailGate = ({ userName, onComplete, lifePathNumber }: EmailGateProps) => 
     });
 
     if (fnError) {
-      setError("We couldn't send your blueprint email. Please try again.");
-      submitLockedRef.current = false;
+      console.warn("Blueprint email could not be delivered; unlocking reading anyway", fnError);
       setSending(false);
+      submitLockedRef.current = false;
+      onComplete(normalizedEmail);
       return;
     }
 
