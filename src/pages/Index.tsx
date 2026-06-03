@@ -12,7 +12,7 @@ import EnergyProfile from "@/components/EnergyProfile";
 import FreePdfButton from "@/components/FreePdfButton";
 import PremiumPaywall from "@/components/PremiumPaywall";
 import FloatingParticles from "@/components/FloatingParticles";
-import { calculateFullProfile, type NumerologyProfile } from "@/lib/numerology";
+import { calculateFullProfile, calculateLifePath, type NumerologyProfile } from "@/lib/numerology";
 import { getInterpretation, birthdayInterpretations } from "@/lib/interpretations";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -93,7 +93,7 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-background">
         <FloatingParticles />
-        <EmailGate userName={userName} onComplete={handleEmailComplete} />
+        <EmailGate userName={userName} onComplete={handleEmailComplete} lifePathNumber={userDob ? calculateLifePath(userDob) : undefined} />
       </div>
     );
   }
