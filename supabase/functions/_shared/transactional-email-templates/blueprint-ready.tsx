@@ -2,14 +2,14 @@ import * as React from 'npm:react@18.3.1'
 import {
   Body,
   Button,
+  Column,
   Container,
   Head,
   Heading,
   Hr,
   Html,
-  Img,
-  Link,
   Preview,
+  Row,
   Section,
   Text,
 } from 'npm:@react-email/components@0.0.22'
@@ -20,101 +20,116 @@ interface BlueprintReadyProps {
   lifePathNumber?: number | string
   readingUrl?: string
   purchaseUrl?: string
-  unsubscribeUrl?: string
 }
 
 const ROOT_URL = 'https://mysticaldigits.com'
+
+const ARCHETYPES: Record<string, { name: string; gift: string; anchor: string; shadow: string }> = {
+  '1': { name: 'The Initiator', gift: 'courage, originality, decisive action', anchor: 'Choose the move only you can make.', shadow: 'impatience or isolation when support would help' },
+  '2': { name: 'The Diplomat', gift: 'intuition, emotional intelligence, partnership', anchor: 'Let sensitivity become precision, not self-doubt.', shadow: 'over-adapting to keep the peace' },
+  '3': { name: 'The Voice', gift: 'expression, joy, artistry, magnetic communication', anchor: 'Say the honest thing simply and beautifully.', shadow: 'scattering energy before the work lands' },
+  '4': { name: 'The Architect', gift: 'structure, endurance, mastery, trust', anchor: 'Build the small system that carries the big dream.', shadow: 'rigidity when life asks for flexibility' },
+  '5': { name: 'The Catalyst', gift: 'freedom, movement, curiosity, reinvention', anchor: 'Use change as fuel, not escape.', shadow: 'restlessness that avoids commitment' },
+  '6': { name: 'The Harmonizer', gift: 'care, beauty, responsibility, devotion', anchor: 'Give from overflow, not obligation.', shadow: 'over-giving until resentment appears' },
+  '7': { name: 'The Seeker', gift: 'wisdom, analysis, intuition, sacred solitude', anchor: 'Protect quiet time; your clarity is born there.', shadow: 'withdrawing when truth needs to be spoken' },
+  '8': { name: 'The Executive', gift: 'power, strategy, abundance, leadership', anchor: 'Let ambition serve something worthy.', shadow: 'measuring worth through outcomes alone' },
+  '9': { name: 'The Humanitarian', gift: 'compassion, completion, vision, service', anchor: 'Release what is complete so the next chapter can arrive.', shadow: 'carrying what was never yours to hold' },
+  '11': { name: 'The Illuminator', gift: 'intuition, inspiration, spiritual signal', anchor: 'Write down the first clear knowing before the mind edits it.', shadow: 'nervous overthinking that dilutes the message' },
+  '22': { name: 'The Master Builder', gift: 'vision, systems, legacy, practical magic', anchor: 'Translate the vision into one measurable next step.', shadow: 'pressure from trying to build everything at once' },
+  '33': { name: 'The Master Healer', gift: 'compassion, teaching, restoration, heart-led service', anchor: 'Serve with boundaries so the gift stays clean.', shadow: 'saving others instead of empowering them' },
+}
 
 export const BlueprintReadyEmail = ({
   firstName = 'Seeker',
   lifePathNumber,
   readingUrl = ROOT_URL,
   purchaseUrl = `${ROOT_URL}/?upgrade=1`,
-  unsubscribeUrl = `${ROOT_URL}/unsubscribe`,
 }: BlueprintReadyProps) => {
-  const subjectLine = lifePathNumber
-    ? `${firstName}, your Life Path ${lifePathNumber} blueprint is unlocked`
-    : `${firstName}, your numerology blueprint is unlocked`
+  const lifePath = lifePathNumber ? String(lifePathNumber) : undefined
+  const archetype = lifePath ? ARCHETYPES[lifePath] : undefined
+  const subjectLine = archetype
+    ? `${firstName}, your Life Path ${lifePath} blueprint is ready`
+    : `${firstName}, your numerology blueprint is ready`
 
   return (
-    <Html>
+    <Html lang="en" dir="ltr">
       <Head />
-      <Preview>{subjectLine} — the patterns the universe encoded the day you were born.</Preview>
+      <Preview>{subjectLine} — open your private reading and start with the 3-minute clarity ritual inside.</Preview>
       <Body style={body}>
         <Container style={container}>
-          {/* Hero — cinematic dark card */}
-          <Section style={hero}>
-            <Text style={kicker}>✦ YOUR NUMEROLOGY BLUEPRINT</Text>
-            <Heading style={h1}>
-              {firstName}, the numbers<br />have spoken.
-            </Heading>
-            <Text style={heroSub}>
-              {lifePathNumber
-                ? `Your Life Path ${lifePathNumber} reading is ready — a one-of-one map of the energies you were born to carry.`
-                : `Your full reading is ready — a one-of-one map of the energies you were born to carry.`}
-            </Text>
-            <Button href={readingUrl} style={ctaPrimary}>
-              Reveal My Blueprint →
-            </Button>
-            <Text style={heroNote}>One tap. No password. Instant access.</Text>
-          </Section>
+          <Section style={shell}>
+            <Section style={hero}>
+              <Text style={eyebrow}>YOUR NUMEROLOGY BLUEPRINT</Text>
+              <Heading style={h1}>{firstName}, your private reading is ready.</Heading>
+              <Text style={heroText}>
+                {archetype
+                  ? `Your Life Path ${lifePath} carries the ${archetype.name} pattern: ${archetype.gift}. Start with the quick map below, then open the full reading when you’re ready.`
+                  : `Your personal numerology map is ready. Start with the quick clarity ritual below, then open the full reading when you’re ready.`}
+              </Text>
+              <Button href={readingUrl} style={primaryButton}>Open My Blueprint</Button>
+              <Text style={microcopy}>Private access · built from your name and birth date · no password required</Text>
+            </Section>
 
-          {/* What's inside */}
-          <Section style={card}>
-            <Heading as="h2" style={h2}>What the universe encoded in you</Heading>
-            <Text style={bullet}>◆ <strong>Life Path</strong> — the soul mission you incarnated to fulfill</Text>
-            <Text style={bullet}>◆ <strong>Destiny &amp; Expression</strong> — the gifts you’re built to share</Text>
-            <Text style={bullet}>◆ <strong>Soul Urge</strong> — what your heart secretly craves</Text>
-            <Text style={bullet}>◆ <strong>Karmic Debt &amp; Master Number alerts</strong> — hidden cycles most people never see</Text>
-          </Section>
+            {archetype && (
+              <Section style={spotlightCard}>
+                <Row>
+                  <Column style={numberColumn}>
+                    <Text style={numberLabel}>LIFE PATH</Text>
+                    <Text style={numberText}>{lifePath}</Text>
+                  </Column>
+                  <Column>
+                    <Text style={cardKicker}>{archetype.name}</Text>
+                    <Heading as="h2" style={h2Dark}>Your best next move</Heading>
+                    <Text style={bodyTextDark}>{archetype.anchor}</Text>
+                    <Text style={smallDark}>Watch for: {archetype.shadow}.</Text>
+                  </Column>
+                </Row>
+              </Section>
+            )}
 
-          {/* Premium offer — the actual money line */}
-          <Section style={offerCard}>
-            <Text style={offerKicker}>UNLOCK THE COMPLETE BLUEPRINT</Text>
-            <Heading as="h2" style={h2Light}>
-              Your full 40-page personal reading — <span style={gold}>$7.99</span> once. Yours forever.
-            </Heading>
-            <Text style={offerBody}>
-              Deep-dive interpretations of every core number. Year-by-year forecast. Compatibility profile.
-              Karmic alerts. Downloadable PDF blueprint. No subscription. No upsells.
-            </Text>
-            <Button href={purchaseUrl} style={ctaGold}>
-              Unlock My Full Reading — $7.99
-            </Button>
-            <Text style={guarantee}>
-              ✓ Instant access &nbsp;·&nbsp; ✓ Lifetime PDF &nbsp;·&nbsp; ✓ 100% private
-            </Text>
-          </Section>
+            <Section style={creamCard}>
+              <Text style={sectionKicker}>READ THIS FIRST</Text>
+              <Heading as="h2" style={h2}>A smarter way to use your reading</Heading>
+              <Text style={bodyText}>Numerology works best as a mirror, not a prediction machine. Read it slowly and look for the patterns that explain what you already feel.</Text>
+              <Text style={checkLine}>01 · Notice the sentence that makes you pause — that is usually the active pattern.</Text>
+              <Text style={checkLine}>02 · Convert one insight into a concrete action within 24 hours.</Text>
+              <Text style={checkLine}>03 · Revisit your Personal Year each month so timing becomes easier to read.</Text>
+            </Section>
 
-          {/* Social proof */}
-          <Section style={proofCard}>
-            <Text style={stars}>★ ★ ★ ★ ★</Text>
-            <Text style={quote}>
-              “It was eerily accurate. I’ve done astrology readings that cost $200 and weren’t half this specific.
-              The karmic debt section alone made the whole thing worth it.”
-            </Text>
-            <Text style={quoteAttr}>— Maya R., verified reader</Text>
-          </Section>
+            <Section style={ritualCard}>
+              <Text style={sectionKickerLight}>3-MINUTE CLARITY RITUAL</Text>
+              <Heading as="h2" style={h2Light}>Before you open the full blueprint</Heading>
+              <Text style={ritualStep}>1. Take three slow breaths and name what you most want clarity on.</Text>
+              <Text style={ritualStep}>2. Open your reading and scan only the headings first.</Text>
+              <Text style={ritualStep}>3. Choose one paragraph that feels specific — turn it into today’s decision.</Text>
+            </Section>
 
-          {/* Secondary CTA */}
-          <Section style={{ textAlign: 'center', padding: '8px 24px 32px' }}>
-            <Text style={smallMuted}>Want to see your free preview first?</Text>
-            <Link href={readingUrl} style={secondaryLink}>Open my free reading →</Link>
-          </Section>
+            <Section style={gridCard}>
+              <Heading as="h2" style={h2}>What’s waiting inside</Heading>
+              <Row style={featureRow}>
+                <Column style={featureColumn}><Text style={featureTitle}>Core Numbers</Text><Text style={featureCopy}>Life Path, Destiny, Soul Urge, Personality, Birthday, and Personal Year.</Text></Column>
+                <Column style={featureColumn}><Text style={featureTitle}>Hidden Patterns</Text><Text style={featureCopy}>Master Number flags, Karmic Debt, and the repeated energies in your name.</Text></Column>
+              </Row>
+              <Row>
+                <Column style={featureColumn}><Text style={featureTitle}>Action Guidance</Text><Text style={featureCopy}>Plain-language prompts, rituals, and next steps you can actually use.</Text></Column>
+                <Column style={featureColumn}><Text style={featureTitle}>Premium PDF</Text><Text style={featureCopy}>A polished workbook-style blueprint you can save, print, and revisit.</Text></Column>
+              </Row>
+            </Section>
 
-          <Hr style={divider} />
+            <Section style={upgradeCard}>
+              <Text style={upgradeKicker}>OPTIONAL COMPLETE READING</Text>
+              <Heading as="h2" style={h2Light}>Go deeper only if the free blueprint resonates.</Heading>
+              <Text style={upgradeText}>
+                The complete version expands your life phases, annual forecast, shadow patterns, compatibility profile, lucky codes, and printable workbook. One-time $7.99 — no subscription.
+              </Text>
+              <Button href={purchaseUrl} style={goldButton}>Unlock the Complete Blueprint</Button>
+            </Section>
 
-          {/* Footer */}
-          <Section style={footer}>
-            <Text style={footerBrand}>Your Numerology Blueprint</Text>
-            <Text style={footerText}>
-              You received this because you requested your personal blueprint at mysticaldigits.com.
-            </Text>
-            <Text style={footerText}>
-              <Link href={unsubscribeUrl} style={footerLink}>Unsubscribe</Link>
-              &nbsp;·&nbsp;
-              <Link href={ROOT_URL} style={footerLink}>mysticaldigits.com</Link>
-            </Text>
+            <Hr style={divider} />
+            <Section style={footer}>
+              <Text style={footerBrand}>Mystical Digits</Text>
+              <Text style={footerText}>You received this because you requested your personal numerology blueprint.</Text>
+            </Section>
           </Section>
         </Container>
       </Body>
@@ -140,230 +155,282 @@ export const template = {
   },
 } satisfies TemplateEntry
 
-/* ===== Styles ===== */
-
 const body: React.CSSProperties = {
   backgroundColor: '#ffffff',
-  fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+  fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif',
   margin: 0,
   padding: 0,
-  color: '#1a1a2e',
+  color: '#171427',
 }
 
 const container: React.CSSProperties = {
-  maxWidth: '600px',
+  maxWidth: '640px',
   margin: '0 auto',
-  padding: '24px 16px 40px',
+  padding: '20px 12px 44px',
+}
+
+const shell: React.CSSProperties = {
+  border: '1px solid #ECE4D0',
+  borderRadius: '24px',
+  overflow: 'hidden',
+  backgroundColor: '#FBF8F0',
 }
 
 const hero: React.CSSProperties = {
-  background: 'linear-gradient(160deg, #0F0F23 0%, #1E1B4B 55%, #2A1F4A 100%)',
-  borderRadius: '20px',
-  padding: '44px 32px 40px',
-  textAlign: 'center',
+  background: 'linear-gradient(150deg, #080914 0%, #15133A 48%, #2A1B45 100%)',
   color: '#ffffff',
+  textAlign: 'center',
+  padding: '48px 34px 42px',
 }
 
-const kicker: React.CSSProperties = {
-  color: '#E6C76A',
-  letterSpacing: '0.28em',
+const eyebrow: React.CSSProperties = {
+  color: '#E7CA72',
   fontSize: '11px',
-  fontWeight: 600,
+  fontWeight: 700,
+  letterSpacing: '0.22em',
   margin: '0 0 18px',
-  textTransform: 'uppercase',
 }
 
 const h1: React.CSSProperties = {
+  color: '#FFF9E8',
   fontFamily: 'Georgia, "Times New Roman", serif',
-  fontSize: '34px',
-  lineHeight: '1.15',
-  margin: '0 0 16px',
-  color: '#ffffff',
+  fontSize: '38px',
+  lineHeight: '1.08',
   fontWeight: 400,
+  margin: '0 auto 18px',
+  maxWidth: '500px',
 }
 
-const heroSub: React.CSSProperties = {
+const heroText: React.CSSProperties = {
+  color: '#DDD7F0',
   fontSize: '16px',
-  lineHeight: '1.55',
-  color: '#D7D3E8',
-  margin: '0 auto 28px',
-  maxWidth: '460px',
+  lineHeight: '1.65',
+  margin: '0 auto 30px',
+  maxWidth: '500px',
 }
 
-const ctaPrimary: React.CSSProperties = {
-  backgroundColor: '#E6C76A',
-  color: '#16162E',
-  fontSize: '15px',
-  fontWeight: 700,
-  letterSpacing: '0.08em',
-  textTransform: 'uppercase',
-  padding: '16px 32px',
+const primaryButton: React.CSSProperties = {
+  backgroundColor: '#E7CA72',
+  color: '#121225',
   borderRadius: '999px',
-  textDecoration: 'none',
   display: 'inline-block',
-  boxShadow: '0 10px 30px rgba(230,199,106,0.35)',
+  fontSize: '14px',
+  fontWeight: 800,
+  letterSpacing: '0.08em',
+  padding: '16px 30px',
+  textDecoration: 'none',
+  textTransform: 'uppercase',
 }
 
-const heroNote: React.CSSProperties = {
-  marginTop: '18px',
+const microcopy: React.CSSProperties = {
+  color: '#AAA3C5',
   fontSize: '12px',
-  color: '#A9A4C2',
-  letterSpacing: '0.04em',
+  lineHeight: '1.5',
+  margin: '18px 0 0',
 }
 
-const card: React.CSSProperties = {
-  background: '#FAF8F2',
-  border: '1px solid #EFE7D2',
-  borderRadius: '16px',
-  padding: '28px 28px 12px',
-  margin: '24px 0',
+const spotlightCard: React.CSSProperties = {
+  backgroundColor: '#14132B',
+  padding: '28px',
+  color: '#ffffff',
+}
+
+const numberColumn: React.CSSProperties = {
+  width: '128px',
+  paddingRight: '20px',
+}
+
+const numberLabel: React.CSSProperties = {
+  color: '#AFA7C8',
+  fontSize: '10px',
+  letterSpacing: '0.18em',
+  margin: '0 0 4px',
+}
+
+const numberText: React.CSSProperties = {
+  color: '#E7CA72',
+  fontFamily: 'Georgia, "Times New Roman", serif',
+  fontSize: '58px',
+  lineHeight: '1',
+  margin: 0,
+}
+
+const cardKicker: React.CSSProperties = {
+  color: '#E7CA72',
+  fontSize: '12px',
+  fontWeight: 700,
+  letterSpacing: '0.12em',
+  margin: '0 0 8px',
+  textTransform: 'uppercase',
+}
+
+const creamCard: React.CSSProperties = {
+  backgroundColor: '#FBF8F0',
+  padding: '30px 30px 22px',
+}
+
+const ritualCard: React.CSSProperties = {
+  background: 'linear-gradient(145deg, #241A43 0%, #121225 100%)',
+  color: '#ffffff',
+  padding: '32px 30px',
+}
+
+const gridCard: React.CSSProperties = {
+  backgroundColor: '#ffffff',
+  padding: '30px',
+}
+
+const upgradeCard: React.CSSProperties = {
+  background: 'linear-gradient(145deg, #101021 0%, #21193E 100%)',
+  color: '#ffffff',
+  textAlign: 'center',
+  padding: '34px 30px 38px',
+}
+
+const sectionKicker: React.CSSProperties = {
+  color: '#B8923A',
+  fontSize: '11px',
+  fontWeight: 800,
+  letterSpacing: '0.16em',
+  margin: '0 0 10px',
+}
+
+const sectionKickerLight: React.CSSProperties = {
+  ...sectionKicker,
+  color: '#E7CA72',
 }
 
 const h2: React.CSSProperties = {
+  color: '#171427',
   fontFamily: 'Georgia, "Times New Roman", serif',
-  fontSize: '22px',
-  margin: '0 0 14px',
-  color: '#16162E',
+  fontSize: '25px',
+  lineHeight: '1.2',
   fontWeight: 400,
+  margin: '0 0 14px',
+}
+
+const h2Dark: React.CSSProperties = {
+  ...h2,
+  color: '#FFF9E8',
+  marginBottom: '10px',
 }
 
 const h2Light: React.CSSProperties = {
   ...h2,
-  color: '#ffffff',
-  fontSize: '24px',
-  lineHeight: '1.25',
+  color: '#FFF9E8',
+  textAlign: 'inherit',
 }
 
-const bullet: React.CSSProperties = {
+const bodyText: React.CSSProperties = {
+  color: '#403B55',
   fontSize: '15px',
   lineHeight: '1.7',
-  margin: '0 0 8px',
-  color: '#2A2A4A',
+  margin: '0 0 16px',
 }
 
-const offerCard: React.CSSProperties = {
-  background: 'linear-gradient(155deg, #16162E 0%, #251E47 100%)',
-  borderRadius: '18px',
-  padding: '32px 28px',
-  textAlign: 'center',
-  color: '#ffffff',
-  margin: '24px 0',
-}
-
-const offerKicker: React.CSSProperties = {
-  color: '#E6C76A',
-  letterSpacing: '0.28em',
-  fontSize: '10px',
-  fontWeight: 700,
-  margin: '0 0 12px',
-}
-
-const gold: React.CSSProperties = {
-  color: '#E6C76A',
-  fontWeight: 700,
-}
-
-const offerBody: React.CSSProperties = {
-  fontSize: '14px',
-  lineHeight: '1.65',
-  color: '#CFC9E6',
-  margin: '12px auto 24px',
-  maxWidth: '440px',
-}
-
-const ctaGold: React.CSSProperties = {
-  background: 'linear-gradient(135deg, #E6C76A 0%, #B8923A 100%)',
-  color: '#16162E',
+const bodyTextDark: React.CSSProperties = {
+  color: '#E6E1F4',
   fontSize: '15px',
-  fontWeight: 700,
-  letterSpacing: '0.06em',
-  padding: '16px 30px',
-  borderRadius: '999px',
-  textDecoration: 'none',
-  display: 'inline-block',
-  textTransform: 'uppercase',
-}
-
-const guarantee: React.CSSProperties = {
-  marginTop: '16px',
-  fontSize: '12px',
-  color: '#A9A4C2',
-  letterSpacing: '0.04em',
-}
-
-const proofCard: React.CSSProperties = {
-  background: '#ffffff',
-  border: '1px solid #ECE7DC',
-  borderRadius: '14px',
-  padding: '24px 24px',
-  textAlign: 'center',
-  margin: '8px 0 20px',
-}
-
-const stars: React.CSSProperties = {
-  color: '#E6C76A',
-  fontSize: '16px',
-  letterSpacing: '0.2em',
-  margin: '0 0 10px',
-}
-
-const quote: React.CSSProperties = {
-  fontFamily: 'Georgia, "Times New Roman", serif',
-  fontSize: '16px',
-  fontStyle: 'italic',
   lineHeight: '1.6',
-  color: '#2A2A4A',
   margin: '0 0 10px',
 }
 
-const quoteAttr: React.CSSProperties = {
-  fontSize: '12px',
-  color: '#6C6885',
-  letterSpacing: '0.05em',
+const smallDark: React.CSSProperties = {
+  color: '#AFA7C8',
+  fontSize: '13px',
+  lineHeight: '1.55',
   margin: 0,
 }
 
-const smallMuted: React.CSSProperties = {
-  fontSize: '13px',
-  color: '#6C6885',
-  margin: '0 0 6px',
+const checkLine: React.CSSProperties = {
+  color: '#26223A',
+  fontSize: '14px',
+  lineHeight: '1.6',
+  margin: '0 0 9px',
 }
 
-const secondaryLink: React.CSSProperties = {
-  color: '#16162E',
-  fontWeight: 600,
-  textDecoration: 'underline',
+const ritualStep: React.CSSProperties = {
+  color: '#E6E1F4',
+  fontSize: '15px',
+  lineHeight: '1.65',
+  margin: '0 0 9px',
+}
+
+const featureRow: React.CSSProperties = {
+  marginBottom: '14px',
+}
+
+const featureColumn: React.CSSProperties = {
+  width: '50%',
+  paddingRight: '14px',
+}
+
+const featureTitle: React.CSSProperties = {
+  color: '#171427',
   fontSize: '14px',
+  fontWeight: 800,
+  margin: '0 0 5px',
+}
+
+const featureCopy: React.CSSProperties = {
+  color: '#5F5871',
+  fontSize: '13px',
+  lineHeight: '1.55',
+  margin: 0,
+}
+
+const upgradeKicker: React.CSSProperties = {
+  color: '#E7CA72',
+  fontSize: '11px',
+  fontWeight: 800,
+  letterSpacing: '0.18em',
+  margin: '0 0 12px',
+}
+
+const upgradeText: React.CSSProperties = {
+  color: '#D9D2EA',
+  fontSize: '14px',
+  lineHeight: '1.7',
+  margin: '0 auto 24px',
+  maxWidth: '480px',
+}
+
+const goldButton: React.CSSProperties = {
+  background: 'linear-gradient(135deg, #F0D98A 0%, #C79C3D 100%)',
+  color: '#121225',
+  borderRadius: '999px',
+  display: 'inline-block',
+  fontSize: '14px',
+  fontWeight: 800,
+  letterSpacing: '0.06em',
+  padding: '15px 28px',
+  textDecoration: 'none',
+  textTransform: 'uppercase',
 }
 
 const divider: React.CSSProperties = {
-  borderColor: '#ECE7DC',
-  margin: '24px 0 16px',
+  borderColor: '#ECE4D0',
+  margin: '0',
 }
 
 const footer: React.CSSProperties = {
+  backgroundColor: '#FBF8F0',
+  padding: '20px 28px 24px',
   textAlign: 'center',
-  padding: '0 16px 16px',
 }
 
 const footerBrand: React.CSSProperties = {
+  color: '#171427',
   fontFamily: 'Georgia, "Times New Roman", serif',
-  fontSize: '14px',
-  color: '#16162E',
-  margin: '0 0 8px',
-  letterSpacing: '0.04em',
+  fontSize: '15px',
+  margin: '0 0 6px',
 }
 
 const footerText: React.CSSProperties = {
+  color: '#817A92',
   fontSize: '11px',
-  color: '#8A86A0',
   lineHeight: '1.6',
-  margin: '0 0 4px',
-}
-
-const footerLink: React.CSSProperties = {
-  color: '#8A86A0',
-  textDecoration: 'underline',
+  margin: 0,
 }
 
 export default BlueprintReadyEmail

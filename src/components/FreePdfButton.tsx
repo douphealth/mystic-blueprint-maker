@@ -4,6 +4,7 @@ import { Download, FileText, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { type NumerologyProfile } from "@/lib/numerology";
 import { getInterpretation } from "@/lib/interpretations";
+import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 
 interface FreePdfButtonProps {
@@ -69,12 +70,20 @@ const karmicLessons: Record<number, { title: string; lesson: string }> = {
 const FreePdfButton = ({ profile, name }: FreePdfButtonProps) => {
   const [generating, setGenerating] = useState(false);
   const [done, setDone] = useState(false);
+  const [generationStep, setGenerationStep] = useState("Preparing your workbook…");
+  const { toast } = useToast();
 
   const generatePdf = async () => {
+    if (generating) return;
     setGenerating(true);
-    await new Promise((r) => setTimeout(r, 350));
+    setDone(false);
+    setGenerationStep("Preparing your workbook…");
 
-    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    try {
+    await new Promise((r) => setTimeout(r, 50));
+    setGenerationStep("Designing your private edition…");
+
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
     const pageW = doc.internal.pageSize.getWidth();   // 210
     const pageH = doc.internal.pageSize.getHeight();  // 297
     const margin = 22;
@@ -846,13 +855,24 @@ This is not fortune-telling. Treat it as a mirror. Read slowly. Highlight what r
 
     footer("dark", "Continue your journey");
 
+    setGenerationStep("Opening your download…");
     // Save
     const firstName = name.split(" ")[0] || "Your";
     doc.save(`${firstName}-Numerology-Blueprint.pdf`);
 
-    setGenerating(false);
     setDone(true);
     setTimeout(() => setDone(false), 4000);
+    } catch (error) {
+      console.error("PDF generation failed", error);
+      toast({
+        title: "PDF download failed",
+        description: "Your workbook could not be created in this browser session. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setGenerating(false);
+      setGenerationStep("Preparing your workbook…");
+    }
   };
 
   return (
@@ -878,7 +898,7 @@ This is not fortune-telling. Treat it as a mirror. Read slowly. Highlight what r
           {generating ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin text-primary" />
-              Crafting your blueprint…
+              {generationStep}
             </>
           ) : done ? (
             <>
