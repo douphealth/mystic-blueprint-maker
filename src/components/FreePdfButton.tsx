@@ -4,6 +4,7 @@ import { Download, FileText, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { type NumerologyProfile } from "@/lib/numerology";
 import { getInterpretation } from "@/lib/interpretations";
+import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 
 interface FreePdfButtonProps {
@@ -69,12 +70,20 @@ const karmicLessons: Record<number, { title: string; lesson: string }> = {
 const FreePdfButton = ({ profile, name }: FreePdfButtonProps) => {
   const [generating, setGenerating] = useState(false);
   const [done, setDone] = useState(false);
+  const [generationStep, setGenerationStep] = useState("Preparing your workbook…");
+  const { toast } = useToast();
 
   const generatePdf = async () => {
+    if (generating) return;
     setGenerating(true);
-    await new Promise((r) => setTimeout(r, 350));
+    setDone(false);
+    setGenerationStep("Preparing your workbook…");
 
-    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    try {
+    await new Promise((r) => setTimeout(r, 50));
+    setGenerationStep("Designing your private edition…");
+
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
     const pageW = doc.internal.pageSize.getWidth();   // 210
     const pageH = doc.internal.pageSize.getHeight();  // 297
     const margin = 22;
