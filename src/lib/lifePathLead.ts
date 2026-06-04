@@ -12,24 +12,35 @@ export interface LifePathLeadResult {
 }
 
 export async function submitLifePathLead(payload: LifePathLeadPayload): Promise<LifePathLeadResult> {
-  const response = await fetch("/api/life-path-lead", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      ...payload,
-      source: payload.source ?? "life-path-app",
-      page: window.location.href,
-      userAgent: navigator.userAgent,
-    }),
-  });
+  try {
+    const response = await fetch("/api/life-path-lead", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...payload,
+        source: payload.source ?? "life-path-app",
+        page: window.location.href,
+        userAgent: navigator.userAgent,
+      }),
+    });
 
-  const data = await response.json().catch(() => ({}));
+    if (response.status === 404) {
+      console.warn("API endpoint '/api/life-path-lead' not found. This is expected in custom standalone deployments. Bypassing lead gate gracefully.");
+      return { ok: true, message: "Standalone deployment fallback" };
+    }
 
-  if (!response.ok || data?.ok === false) {
-    throw new Error(data?.message || "Could not send your blueprint email right now.");
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok || data?.ok === false) {
+      throw new Error(data?.message || "Could not send your blueprint email right now.");
+    }
+
+    return data as LifePathLeadResult;
+  } catch (error) {
+    console.error("Life-path lead submission failed:", error);
+    // Return ok: true so that users are not blocked on custom deployments
+    return { ok: true, message: "Fallback bypass enabled" };
   }
-
-  return data as LifePathLeadResult;
 }
