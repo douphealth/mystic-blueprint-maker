@@ -72,6 +72,7 @@ const FreePdfButton = ({ profile, name }: FreePdfButtonProps) => {
     const muted: RGB = [157, 147, 128];
     const lavender: RGB = [155, 124, 217];
     const teal: RGB = [88, 194, 184];
+    const borderViolet: RGB = [50, 44, 74];
 
     const addBg = () => {
       doc.setFillColor(...midnight); doc.rect(0, 0, pageW, pageH, "F");
@@ -255,91 +256,113 @@ const FreePdfButton = ({ profile, name }: FreePdfButtonProps) => {
     // Integration
     newPage("7-Day Integration Plan");
     const days = [
-      ["Day 1", "Circle the one number that feels most accurate and write why."],
-      ["Day 2", "Circle the number that feels uncomfortable; this is often your growth edge."],
-      ["Day 3", "Choose one relationship where your blueprint can make you more honest or kind."],
-      ["Day 4", "Choose one money/work decision and apply your Personal Year timing."],
-      ["Day 5", "Create one environment upgrade that supports your numbers."],
-      ["Day 6", "Take one visible action: publish, ask, clean up, decide, or complete."],
-      ["Day 7", "Review: what felt energizing, what felt forced, and what repeats?"],
+      ["Day 1 — Alignment Diagnosis", "Circle the one number that feels most accurate in your reading and write why it resonates."],
+      ["Day 2 — Shadow Identification", "Circle the number that feels uncomfortable; this is often your current developmental growth edge."],
+      ["Day 3 — Relationship Assessment", "Choose one close relationship and evaluate it through the lens of your Soul Urge motivation."],
+      ["Day 4 — Strategic Timing", "Choose one immediate career or financial decision and review it against your Personal Year cycle."],
+      ["Day 5 — Environmental Design", "Make one physical or digital environment upgrade that supports your primary numbers."],
+      ["Day 6 — Visible Action", "Take one small, visible action: write, publish, ask, clean up, decide, or complete a loop."],
+      ["Day 7 — Feedback Loops", "Review the week: what felt aligned, what felt performative, and what evidence did you collect?"],
     ];
-    days.forEach(([d, b]) => card(d, b, d === "Day 7" ? gold : teal));
-    text("Credibility note: numerology is a symbolic reflection system. Use it to ask better questions, notice patterns, and take grounded action. It is not medical, legal, financial, or psychological advice.", 8, muted);
+    days.forEach(([d, b]) => premiumCard(d, b, d.includes("7") ? gold : teal));
+    text("Credibility note: numerology is a symbolic reflection system. Use it to ask better questions, notice patterns, and take grounded action. It is not medical, legal, financial, or psychological advice.", 7.5, muted, "italic");
     footer();
 
-
-
-    // Premium synthesis page
+    // Premium Operating System page
     newPage("Your Personal Operating System");
     text("Use this page when you need a fast, grounded answer. Your numbers are not separate facts; together they form a practical operating system for decisions, relationships, work, energy, and timing.", 10, pearl);
-    card("Core drive", `Life Path ${profile.lifePath}: the recurring lesson and growth pattern that keeps asking for maturity.`, gold);
-    card("Natural gift", `Expression ${profile.expression}: the talent channel that becomes stronger when it is practiced, packaged, and shared.`, teal);
-    card("Inner fuel", `Soul Urge ${profile.soulUrge}: the private motivation that must be honored for decisions to feel emotionally clean.`, lavender);
-    card("Social signal", `Personality ${profile.personality}: the first impression and energetic style people often meet before they know your deeper story.`, gold);
-    card("Timing", `Personal Year ${profile.personalYear} + Personal Month ${month}: the season you are in now; use it to choose the right pace and pressure level.`, teal);
+    premiumCard("Core drive", `Life Path ${profile.lifePath}: the recurring developmental growth pattern that demands maturity and self-reflection.`, gold);
+    premiumCard("Natural gift", `Expression ${profile.expression}: the talent vector that grows stronger when it is actively practiced, packaged, and shared.`, teal);
+    premiumCard("Inner fuel", `Soul Urge ${profile.soulUrge}: the private motivation that must be satisfied for decisions to feel emotionally clean.`, lavender);
+    premiumCard("Social signal", `Personality ${profile.personality}: the initial impression and energetic style you project to the outer world.`, gold);
+    premiumCard("Timing Season", `Personal Year ${profile.personalYear} + Personal Month ${month}: your current seasonal cycle; use it to regulate your work pace.`, teal);
     footer();
 
     // Decision filter
     newPage("Premium Decision Filter");
-    text("Before saying yes, buying, quitting, launching, replying, committing, or delaying, run the decision through these five filters.", 10, pearl);
+    text("Before saying yes, investing, launching, replying, committing, or delaying, run the decision through these five diagnostic filters.", 10, pearl);
     [
-      ["1. Alignment", "Does this strengthen my Life Path lesson or repeat an old shadow pattern?"],
-      ["2. Energy", "Does my Soul Urge feel nourished, or am I performing for approval?"],
-      ["3. Expression", "Will this let my gifts become more useful, visible, or refined?"],
-      ["4. Timing", "Does this match the rhythm of my Personal Year/Month, or am I forcing the wrong season?"],
-      ["5. Proof", "What small test can I run within 24–72 hours before overcommitting?"],
-    ].forEach(([title, body]) => card(title, body, title.startsWith("5") ? gold : teal));
-    text("Decision I am evaluating:", 9, pearl, "bold");
-    for (let i=0;i<5;i++){ ensure(8); doc.setDrawColor(85,77,106); doc.line(margin, y, pageW-margin, y); y += 8; }
-    text("My smallest next proof step:", 9, pearl, "bold");
-    for (let i=0;i<4;i++){ ensure(8); doc.setDrawColor(85,77,106); doc.line(margin, y, pageW-margin, y); y += 8; }
+      ["1. Alignment Filter", "Does this decision support my Life Path growth, or does it repeat an old shadow pattern?"],
+      ["2. Integrity Filter", "Does my Soul Urge feel genuinely satisfied, or am I performing for approval/guilt?"],
+      ["3. Capability Filter", "Will this allow my core Destiny / Expression talents to be utilized, refined, and visible?"],
+      ["4. Seasonal Filter", "Does this match the timing of my Personal Year, or am I forcing the wrong action for this season?"],
+      ["5. Leverage Filter", "What is the smallest test/proof step I can run within 24-72 hours before overcommitting?"],
+    ].forEach(([title, body]) => premiumCard(title, body, title.startsWith("5") ? gold : teal));
+    
+    text("Decision I am currently evaluating:", 9.5, softGold, "bold");
+    for (let i = 0; i < 2; i++) { ensure(8); doc.setDrawColor(85, 77, 106); doc.line(margin, y, pageW - margin, y); y += 8; }
+    y += 2;
+    text("My smallest next proof step (24-hour test):", 9.5, softGold, "bold");
+    for (let i = 0; i < 2; i++) { ensure(8); doc.setDrawColor(85, 77, 106); doc.line(margin, y, pageW - margin, y); y += 8; }
     footer();
 
     // Shadow to strategy
     newPage("Shadow → Strategy Map");
-    text("Every number has a high expression and a distorted expression. Use this page to convert friction into a cleaner behavior.", 10, pearl);
+    text("Every number has a mature expression and a distorted expression. Use this page to convert friction into a cleaner behavior.", 10, pearl);
     const shadowRows = [
-      ["When I feel stuck", "Name the repeated emotion or trigger without judging it."],
-      ["The old strategy", "What do I usually do — avoid, chase, control, overgive, overthink, rebel, collapse?"],
-      ["The mature expression", "What would my Life Path look like if it were calm, resourced, and honest?"],
-      ["The 10-minute action", "What action is small enough to do now and meaningful enough to shift the pattern?"],
+      ["When I feel stuck or triggered:", "Identify the repeated emotion or trigger without judging it. (e.g. control, anxiety, collapse)"],
+      ["My default coping strategy:", "What do I usually do — avoid, chase, overgive, overthink, rebel, or isolate?"],
+      ["The mature response:", "What would my Life Path look like if it were calm, resourced, and completely honest?"],
+      ["The 10-minute shift action:", "What micro-action is small enough to do now and meaningful enough to shift the pattern?"],
     ];
     shadowRows.forEach(([title, body]) => {
-      text(title, 10, softGold, "bold");
-      text(body, 8.5, muted);
-      for (let i=0;i<3;i++){ ensure(8); doc.setDrawColor(85,77,106); doc.line(margin, y, pageW-margin, y); y += 8; }
+      ensure(28);
+      doc.setFillColor(...gold); doc.rect(margin, y - 2.5, 1.5, 1.5, "F");
+      text(title, 9.5, softGold, "bold", 5);
+      text(body, 8, muted, "normal", 5);
+      
+      doc.setDrawColor(85, 77, 106); doc.setLineWidth(0.15);
+      for (let i = 0; i < 2; i++) {
+        ensure(8);
+        doc.line(margin + 5, y, pageW - margin, y);
+        y += 8;
+      }
       y += 2;
     });
     footer();
 
     // 30-day activation plan
     newPage("30-Day Activation Plan");
-    text("Pick one theme for the month. The goal is not to become a different person; it is to make your existing pattern more conscious, useful, beautiful, and grounded.", 10, pearl);
+    text("Choose one central theme for the next 30 days. The goal is to make your existing patterns more conscious, useful, and grounded.", 10, pearl);
     const weeks = [
-      ["Week 1 — Notice", "Track where your number shows up naturally: decisions, conflicts, creativity, money, relationships, avoidance."],
-      ["Week 2 — Refine", "Choose one behavior to upgrade: clearer boundary, better routine, braver expression, deeper rest, cleaner completion."],
-      ["Week 3 — Express", "Make it visible: publish, ask, organize, repair, decide, pitch, schedule, create, or finish."],
-      ["Week 4 — Integrate", "Review evidence. Keep what worked, release what was performative, and choose the next grounded practice."],
+      ["Week 1 — Observational Tracking", "Notice where your number shows up naturally in your decisions, conflicts, boundaries, and avoidance."],
+      ["Week 2 — Calibration & Boundaries", "Choose one specific behavior to upgrade: set a clearer boundary, align a routine, or seek rest."],
+      ["Week 3 — Bold Alignment", "Take a visible step: publish your work, ask for what you need, resolve a dispute, or finish an open loop."],
+      ["Week 4 — Integration & Audit", "Audit your progress. Preserve what worked, release what was performative, and set the next monthly focus."],
     ];
-    weeks.forEach(([w,b]) => card(w,b, w.includes("4") ? gold : teal));
-    text("My 30-day theme:", 9, pearl, "bold");
-    for (let i=0;i<4;i++){ ensure(8); doc.setDrawColor(85,77,106); doc.line(margin, y, pageW-margin, y); y += 8; }
+    weeks.forEach(([w, b]) => premiumCard(w, b, w.includes("4") ? gold : teal));
+    
+    text("My 30-day activation theme:", 9.5, softGold, "bold");
+    for (let i = 0; i < 2; i++) { ensure(8); doc.setDrawColor(85, 77, 106); doc.line(margin, y, pageW - margin, y); y += 8; }
     footer();
 
     // Relationship/work prompts
     newPage("High-Value Reflection Prompts");
+    text("Answer these prompts during your weekly review to align your schedule, career, and boundaries.", 10, pearl);
+    y += 2;
     const prompts = [
-      "Where am I making life harder by ignoring my natural design?",
-      "What do people consistently receive from me — clarity, care, ideas, beauty, structure, courage, insight, leadership?",
-      "What boundary would make my gift easier to trust?",
-      "What opportunity am I calling ‘not the right time’ because it asks me to grow?",
-      "What would premium self-respect look like this week in my calendar, body, home, inbox, money, and relationships?",
-      "What is complete, and what wisdom can I keep without keeping the obligation?",
+      "Where am I making life harder by ignoring my natural cosmic design?",
+      "What do people consistently receive from me — clarity, care, ideas, beauty, structure, courage, or leadership?",
+      "What specific boundary would make my core gift easier for others to trust?",
+      "What opportunity am I calling 'not the right time' because it asks me to step into leadership?",
+      "What would premium self-respect look like this week in my calendar, body, home, inbox, and budget?",
+      "What project is complete, and what wisdom can I keep without carrying the obligation forward?",
     ];
     prompts.forEach((prompt, idx) => {
-      text(`${idx + 1}. ${prompt}`, 9, softGold, "bold");
-      for (let i=0;i<3;i++){ ensure(8); doc.setDrawColor(85,77,106); doc.line(margin, y, pageW-margin, y); y += 8; }
-      y += 1;
+      ensure(26);
+      // Checkbox box
+      doc.setDrawColor(...gold); doc.setLineWidth(0.3);
+      doc.rect(margin, y - 2.5, 3, 3, "S");
+      
+      text(prompt, 9.5, softGold, "bold", 5);
+      
+      doc.setDrawColor(85, 77, 106); doc.setLineWidth(0.15);
+      for (let i = 0; i < 2; i++) {
+        ensure(8);
+        doc.line(margin + 5, y, pageW - margin, y);
+        y += 8;
+      }
+      y += 2;
     });
     footer();
 
