@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { type NumerologyProfile, getNumberCategory } from "@/lib/numerology";
 import { getInterpretation, birthdayInterpretations } from "@/lib/interpretations";
 import jsPDF from "jspdf";
+import { useToast } from "@/hooks/use-toast";
 
 interface FreePdfButtonProps {
   profile: NumerologyProfile;
@@ -48,10 +49,13 @@ const numberPrinciples: Record<number, string[]> = {
 const FreePdfButton = ({ profile, name }: FreePdfButtonProps) => {
   const [generating, setGenerating] = useState(false);
   const [done, setDone] = useState(false);
+  const { toast } = useToast();
 
   const generatePdf = async () => {
     setGenerating(true);
     await new Promise((r) => setTimeout(r, 350));
+
+    try {
 
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
@@ -165,7 +169,8 @@ const FreePdfButton = ({ profile, name }: FreePdfButtonProps) => {
     footer();
 
     // Timing plan
-    const month = profile.personalMonth;
+    const currentMonthIdx = new Date().getMonth();
+    const month = profile.personalMonths?.[currentMonthIdx] || (((profile.personalYear + currentMonthIdx + 1 - 1) % 9) + 1);
     const focus = monthlyFocus[month] || monthlyFocus[((month - 1) % 9) + 1];
     newPage(`${MONTH_NAMES[new Date().getMonth()]} Focus: ${focus.theme}`);
     text(`Your Personal Month number is ${month}. Treat this as your practical focus filter for the next 30 days.`, 11, pearl, "bold");
@@ -203,7 +208,7 @@ const FreePdfButton = ({ profile, name }: FreePdfButtonProps) => {
     card("Natural gift", `Expression ${profile.expression}: the talent channel that becomes stronger when it is practiced, packaged, and shared.`, teal);
     card("Inner fuel", `Soul Urge ${profile.soulUrge}: the private motivation that must be honored for decisions to feel emotionally clean.`, lavender);
     card("Social signal", `Personality ${profile.personality}: the first impression and energetic style people often meet before they know your deeper story.`, gold);
-    card("Timing", `Personal Year ${profile.personalYear} + Personal Month ${profile.personalMonth}: the season you are in now; use it to choose the right pace and pressure level.`, teal);
+    card("Timing", `Personal Year ${profile.personalYear} + Personal Month ${month}: the season you are in now; use it to choose the right pace and pressure level.`, teal);
     footer();
 
     // Decision filter
@@ -270,10 +275,19 @@ const FreePdfButton = ({ profile, name }: FreePdfButtonProps) => {
     });
     footer();
 
-    doc.save(`${name.trim().replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "mysticaldigits"}-premium-life-path-blueprint.pdf`);
-    setDone(true);
-    setGenerating(false);
-    setTimeout(() => setDone(false), 2500);
+      doc.save(`${name.trim().replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "mysticaldigits"}-premium-life-path-blueprint.pdf`);
+      setDone(true);
+      setGenerating(false);
+      setTimeout(() => setDone(false), 2500);
+    } catch (err) {
+      console.error("Failed to generate PDF:", err);
+      toast({
+        title: "PDF Generation Failed",
+        description: "There was an error creating your workbook. Please try again.",
+        variant: "destructive",
+      });
+      setGenerating(false);
+    }
   };
 
   return (
