@@ -42,6 +42,24 @@ const Index = () => {
     }
   }, [user, phase]);
 
+  // Load profile from URL query parameters if present to bypass intake quiz and email gate
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const nameParam = params.get("name");
+    const dobParam = params.get("dob");
+    if (nameParam && dobParam) {
+      const parsedDob = new Date(dobParam);
+      if (!isNaN(parsedDob.getTime())) {
+        const trimmedName = nameParam.trim();
+        setUserName(trimmedName);
+        setUserDob(parsedDob);
+        const calculatedProfile = calculateFullProfile(trimmedName, parsedDob);
+        setProfile(calculatedProfile);
+        setPhase("results");
+      }
+    }
+  }, []);
+
   const handleSubmit = (name: string, dob: Date) => {
     setUserName(name.trim());
     setUserDob(dob);

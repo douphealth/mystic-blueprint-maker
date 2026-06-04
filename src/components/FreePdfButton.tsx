@@ -78,11 +78,58 @@ const FreePdfButton = ({ profile, name }: FreePdfButtonProps) => {
       doc.setFillColor(18, 14, 34); doc.roundedRect(8, 8, pageW - 16, pageH - 16, 4, 4, "F");
       doc.setDrawColor(...gold); doc.setLineWidth(0.25); doc.roundedRect(11, 11, pageW - 22, pageH - 22, 3, 3, "S");
       doc.setDrawColor(70, 58, 110); doc.setLineWidth(0.15); doc.roundedRect(14, 14, pageW - 28, pageH - 28, 3, 3, "S");
+
+      // Decorative Corner Accents (Enterprise Mystic Design)
+      const drawCorner = (x: number, y: number, isRight: boolean, isBottom: boolean) => {
+        const len = 7;
+        const dx = isRight ? -len : len;
+        const dy = isBottom ? -len : len;
+        doc.setDrawColor(...gold); doc.setLineWidth(0.5);
+        doc.line(x, y, x + dx, y);
+        doc.line(x, y, x, y + dy);
+      };
+      drawCorner(14, 14, false, false);
+      drawCorner(pageW - 14, 14, true, false);
+      drawCorner(14, pageH - 14, false, true);
+      drawCorner(pageW - 14, pageH - 14, true, true);
     };
-    const footer = (label = "MysticalDigits • Free Life Path Blueprint") => {
+
+    const footer = (label = "✦ MysticalDigits Premium Blueprint • mysticaldigits.com ✦") => {
       doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(...muted);
       doc.text(label, pageW / 2, pageH - 11, { align: "center" });
+      doc.link(pageW / 2 - 25, pageH - 13, 50, 4, { url: "https://mysticaldigits.com" });
     };
+
+    const drawSacredGeometry = (x: number, y: number, r: number) => {
+      doc.setDrawColor(...gold); doc.setLineWidth(0.15);
+      doc.circle(x, y, r);
+      doc.circle(x, y, r - 3);
+      doc.circle(x, y, r - 8);
+      doc.circle(x, y, r / 2);
+      for (let i = 0; i < 12; i++) {
+        const angle = (i * Math.PI) / 6;
+        const x1 = x + Math.cos(angle) * (r - 8);
+        const y1 = y + Math.sin(angle) * (r - 8);
+        const x2 = x + Math.cos(angle) * r;
+        const y2 = y + Math.sin(angle) * r;
+        doc.line(x1, y1, x2, y2);
+      }
+      for (let i = 0; i < 8; i++) {
+        const a1 = (i * Math.PI) / 4;
+        const a2 = ((i + 2) * Math.PI) / 4;
+        doc.line(x + Math.cos(a1) * (r - 3), y + Math.sin(a1) * (r - 3), x + Math.cos(a2) * (r - 3), y + Math.sin(a2) * (r - 3));
+      }
+    };
+
+    const textLink = (body: string, url: string, label = "Explore in-depth guide ↗") => {
+      ensure(10);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(8.5); doc.setTextColor(...gold);
+      doc.text(`${body} [${label}]`, margin, y);
+      const textW = doc.getTextWidth(`${body} [${label}]`);
+      doc.link(margin, y - 3, textW, 4, { url });
+      y += 6;
+    };
+
     const newPage = (title?: string) => {
       doc.addPage(); addBg(); y = margin + 4;
       if (title) { sectionTitle(title); y += 2; }
@@ -118,16 +165,18 @@ const FreePdfButton = ({ profile, name }: FreePdfButtonProps) => {
 
     // Cover
     addBg();
-    doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(...gold); doc.text("MYSTICALDIGITS", pageW/2, 30, { align: "center" });
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...gold); doc.text("✦ MYSTICALDIGITS ✦", pageW/2, 30, { align: "center" });
     doc.setFont("helvetica", "bold"); doc.setFontSize(30); doc.setTextColor(...softGold); doc.text("LIFE PATH", pageW/2, 62, { align: "center" });
     doc.setFontSize(25); doc.text("BLUEPRINT", pageW/2, 75, { align: "center" });
     doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(...pearl); doc.text("A premium self-discovery workbook for clarity, timing, and aligned action", pageW/2, 89, { align: "center", maxWidth: 150 });
     doc.setDrawColor(...gold); doc.line(55, 102, pageW - 55, 102);
     doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.setTextColor(255,255,255); doc.text(name.toUpperCase(), pageW/2, 118, { align: "center", maxWidth: 160 });
-    const cx = pageW/2, cy = 151;
-    doc.setDrawColor(...gold); doc.setLineWidth(0.6); doc.circle(cx, cy, 27);
-    doc.setFontSize(34); doc.setTextColor(...gold); doc.text(String(profile.lifePath), cx, cy + 5, { align: "center" });
-    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...pearl); doc.text("YOUR LIFE PATH NUMBER", cx, cy + 38, { align: "center" });
+    
+    // Draw gorgeous sacred geometry chart on cover
+    const cx = pageW/2, cy = 153;
+    drawSacredGeometry(cx, cy, 29);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(32); doc.setTextColor(...gold); doc.text(String(profile.lifePath), cx, cy + 4.5, { align: "center" });
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...pearl); doc.text("YOUR LIFE PATH NUMBER", cx, cy + 40, { align: "center" });
     doc.setFontSize(9); doc.setTextColor(...muted); doc.text("Use this as a reflective planning tool — not deterministic advice.", pageW/2, pageH - 24, { align: "center", maxWidth: 150 });
     footer(`Generated ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`);
 
@@ -156,6 +205,19 @@ const FreePdfButton = ({ profile, name }: FreePdfButtonProps) => {
       text(interp.shortDesc, 11, [226, 206, 163], "italic");
       rule();
       text(interp.fullText.replace(/\n\n/g, "\n"), 9.5, pearl);
+      
+      // Hyper-relevant high-value website/blog URLs
+      if (n.type === "lifePath") {
+        textLink("Explore in-depth alignment tactics for Life Path " + n.value, "https://mysticaldigits.com/blog/life-path-guide");
+        y += 2;
+      } else if (n.type === "expression") {
+        textLink("How to leverage Expression " + n.value + " in your business & career", "https://mysticaldigits.com/blog/expression-career-guide");
+        y += 2;
+      } else if (n.type === "personalYear") {
+        textLink("Align your decision cycles with Personal Year " + n.value + " energy", "https://mysticaldigits.com/blog/numerology-cycles");
+        y += 2;
+      }
+      
       const principles = numberPrinciples[n.value] || ["Use the insight as a mirror, then choose one grounded behavior."];
       card("Three grounded practices", principles.map((p, i) => `${i + 1}. ${p}`).join("\n"), lavender);
       card("This week’s action", `Choose one situation where your ${n.label} energy can become more useful, practical, and visible. Make the action small enough to complete in 24 hours.`, teal);
@@ -165,6 +227,8 @@ const FreePdfButton = ({ profile, name }: FreePdfButtonProps) => {
     // Birthday energy
     newPage(`Birthday Energy: Day ${profile.birthday}`);
     text(birthdayInterpretations[profile.birthday] || birthdayInterpretations[1], 10, pearl);
+    textLink("Read the deep cosmic meaning behind birthday number " + profile.birthday, "https://mysticaldigits.com/blog/birthday-numbers-meaning");
+    y += 2;
     card("Reflection prompt", "What natural gift do people already come to you for — and how could you package it more intentionally?", gold);
     footer();
 
@@ -174,6 +238,10 @@ const FreePdfButton = ({ profile, name }: FreePdfButtonProps) => {
     const focus = monthlyFocus[month] || monthlyFocus[((month - 1) % 9) + 1];
     newPage(`${MONTH_NAMES[new Date().getMonth()]} Focus: ${focus.theme}`);
     text(`Your Personal Month number is ${month}. Treat this as your practical focus filter for the next 30 days.`, 11, pearl, "bold");
+    
+    textLink("Read the full Personal Month forecasting guide for Month " + month, `https://mysticaldigits.com/blog/personal-month-${month}`);
+    y += 2;
+    
     card("Do", focus.do, teal);
     card("Avoid", focus.avoid, lavender);
     card("Ritual", focus.ritual, gold);

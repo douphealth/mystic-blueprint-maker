@@ -1,234 +1,289 @@
-# MysticalDigits: Premium Onboarding Email Sequence
+# MysticalDigits: High-Converting & Personalized Onboarding Email Sequence
 
-This document contains a highly converting, gorgeously crafted 5-part email sequence to be loaded into your Email Service Provider (ESP) such as Loops, Resend, Mailchimp, ConvertKit, or ActiveCampaign.
-
----
-
-## 🎨 Layout and Styling Guide (Apply to all emails)
-* **Fonts**: Elegant Sans-Serif (e.g., `Inter`, `Outfit`, or `Montserrat`) for body, and a serif style for headings (e.g., `Playfair Display`) if your ESP supports it.
-* **Colors**: 
-  * Background: Slate Dark (`#0B0B14`) or Soft Alabaster White (`#FCF6E5` / `#FAF6EE`) depending on your brand theme.
-  * Primary Text: Obsidian Ink (`#12101C`) or Soft Pearl (`#FCF6E9`)
-  * Accent/Gold: `#DDB146` (Warm Mystic Gold)
-  * Muted: `#9D9380` (Stone Gray)
-* **Header Logo**: Keep it clean and centered: `✦ MYSTICALDIGITS ✦` in Gold uppercase letter spacing.
-* **CTA Buttons**: Rounded borders, `#DDB146` background, black text, with ample padding.
+This email sequence uses dynamic query parameters to send returning users directly to their calculated results and premium PDF workbook, bypassing the intake quiz entirely.
 
 ---
 
-## 📧 Email 1: Welcome & Instant Access (Your Blueprint is Unlocked)
-**Trigger**: Immediately after email capture (`/api/life-path-lead`)
-**Subject**: ✦ Your Custom Life Path {{life_path_number}} Blueprint is unlocked, {{first_name}}!
-**Preheader**: Open to reveal your six-number alignment map, timing focus, and Day 1 action.
+## ⚡ CRITICAL: How to Set Up the Direct Bypass Links
+To prevent subscribers from having to take the quiz again, you must construct the CTA links using your Email Service Provider's (ESP) dynamic merge tags. 
+
+Use this format for your CTA buttons:
+`https://life-path.mysticaldigits.com/?name=YOUR_NAME_TAG&dob=YOUR_DOB_TAG`
+
+### 📋 Platform-Specific Merge Tag Reference Table
+
+| ESP Platform | Name Merge Tag | Date of Birth (YYYY-MM-DD) Merge Tag | Example CTA Link |
+| :--- | :--- | :--- | :--- |
+| **Loops.so** | `{{contact.name}}` | `{{contact.dob}}` | `https://life-path.mysticaldigits.com/?name={{contact.name}}&dob={{contact.dob}}` |
+| **ActiveCampaign** | `%FIRSTNAME% %LASTNAME%` | `%BIRTH_DATE%` | `https://life-path.mysticaldigits.com/?name=%FIRSTNAME%+%LASTNAME%&dob=%BIRTH_DATE%` |
+| **Mailchimp** | `*|FNAME|* *|LNAME|*` | `*|DOB|*` | `https://life-path.mysticaldigits.com/?name=*|FNAME|*+*|LNAME|*&dob=*|DOB|*` |
+| **ConvertKit** | `{{ subscriber.first_name }}` | `{{ subscriber.cf_birth_date }}` | `https://life-path.mysticaldigits.com/?name={{ subscriber.first_name }}&dob={{ subscriber.cf_birth_date }}` |
+| **Klaviyo** | `{{ person.first_name }}` | `{{ person.birth_date }}` | `https://life-path.mysticaldigits.com/?name={{ person.first_name }}&dob={{ person.birth_date }}` |
+| **Resend** | `{{ name }}` | `{{ dob }}` | `https://life-path.mysticaldigits.com/?name={{ name }}&dob={{ dob }}` |
+
+---
+
+## 📧 Email 1: Welcome & Instant Results Bypass (Day 1)
+**Trigger**: Immediately after intake submission.
+**Subject**: ✦ {{first_name}}, your custom Life Path {{life_path_number}} Blueprint is unlocked!
+**Preheader**: Open to access your six-number alignment map, sacred geometry chart, and custom PDF workbook.
 
 ```html
-<!-- HEADER -->
-<p style="text-align: center; font-family: sans-serif; font-size: 11px; letter-spacing: 0.3em; color: #DDB146; text-transform: uppercase;">✦ MYSTICALDIGITS ✦</p>
-
-<!-- BODY -->
-<p>Hello {{first_name}},</p>
-
-<p>Your dates are calculated, the frequencies mapped, and your blueprint is officially unlocked. You can return to your interactive dashboard at any time using the link below:</p>
-
-<!-- CTA BUTTON -->
-<div style="text-align: center; margin: 30px 0;">
-  <a href="{{blueprint_results_url}}" style="background-color: #DDB146; color: #12101C; font-family: 'Montserrat', sans-serif; font-weight: bold; font-size: 13px; letter-spacing: 0.15em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 30px; display: inline-block; box-shadow: 0 4px 15px rgba(221, 177, 70, 0.3);">
-    Access Your Interactive Reading
-  </a>
+<!-- HEADER LOGO -->
+<div style="text-align: center; padding: 20px 0; background-color: #0B0B14;">
+  <p style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 13px; font-weight: bold; letter-spacing: 0.35em; color: #DDB146; text-transform: uppercase;">✦ MYSTICALDIGITS ✦</p>
 </div>
 
-<p>Your core frequency is <strong>Life Path {{life_path_number}}</strong>. In numerology, the Life Path is not a rigid prediction; it is your recurring growth pattern. It is the lesson your soul signed up to master in this lifetime.</p>
+<!-- EMAIL BODY -->
+<div style="font-family: 'Georgia', Times, serif; font-size: 16px; line-height: 1.8; color: #12101C; max-width: 600px; margin: 0 auto; padding: 30px 20px; background-color: #FCF6E9;">
+  
+  <p>Hello {{first_name}},</p>
+  
+  <p>Your cosmic calculations are ready. Your birth numbers and name frequencies have been mapped, and your personalized results are fully compiled.</p>
+  
+  <p>To view your interactive numerology map and download your high-value printable workbook, use your direct access link below. <strong>(This link bypasses the intake quiz, loading your custom numbers immediately)</strong>:</p>
 
-<p>Here is your quick profile summary:</p>
-<ul>
-  <li><strong>Life Path (Core Growth):</strong> {{life_path_number}}</li>
-  <li><strong>Destiny/Expression (Real-world talents):</strong> {{expression_number}}</li>
-  <li><strong>Soul Urge (Hidden inner drive):</strong> {{soul_urge_number}}</li>
-  <li><strong>Persona (First impression style):</strong> {{personality_number}}</li>
-  <li><strong>Personal Year Frequency for {{current_year}}:</strong> {{personal_year}}</li>
-</ul>
+  <!-- PREMIUM CTA BUTTON -->
+  <div style="text-align: center; margin: 35px 0;">
+    <a href="https://life-path.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.15em; text-transform: uppercase; padding: 18px 32px; text-decoration: none; border-radius: 4px; display: inline-block; box-shadow: 0 4px 15px rgba(221, 177, 70, 0.4);">
+      Access Your Custom Reading ↗
+    </a>
+  </div>
 
-<hr style="border: 0; border-top: 1px solid #DDB146; opacity: 0.2; margin: 25px 0;" />
+  <p>Your core frequency is <strong>Life Path {{life_path_number}}</strong>. In Pythagorean numerology, the Life Path represents your primary developmental rhythm. It is not deterministic; it acts as a mirror showing where your energy naturally thrives and where it encounters friction.</p>
 
-<h3>✦ Day 1 Action: The Mirror Exercise</h3>
-<p>Look at your <strong>Life Path {{life_path_number}}</strong>. Write down one recent situation where you felt completely in your element, and one where you felt totally stuck or drained. You'll notice that the stuck moment is directly connected to the shadow side of your Life Path {{life_path_number}} number, while your aligned moment was its high expression.</p>
+  <h3 style="font-family: 'Helvetica Neue', Helvetica, sans-serif; color: #12101C; border-bottom: 1px solid #DDB146; padding-bottom: 8px; margin-top: 30px;">✦ Your Core Alignment Profile</h3>
+  <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-family: sans-serif; font-size: 14px;">
+    <tr style="border-bottom: 1px solid rgba(18, 16, 28, 0.1);">
+      <td style="padding: 10px 0; font-weight: bold; color: #9D9380;">Growth Pattern (Life Path)</td>
+      <td style="padding: 10px 0; text-align: right; font-weight: bold;">Number {{life_path_number}}</td>
+    </tr>
+    <tr style="border-bottom: 1px solid rgba(18, 16, 28, 0.1);">
+      <td style="padding: 10px 0; font-weight: bold; color: #9D9380;">Talent Vector (Expression)</td>
+      <td style="padding: 10px 0; text-align: right; font-weight: bold;">Number {{expression_number}}</td>
+    </tr>
+    <tr style="border-bottom: 1px solid rgba(18, 16, 28, 0.1);">
+      <td style="padding: 10px 0; font-weight: bold; color: #9D9380;">Internal Fuel (Soul Urge)</td>
+      <td style="padding: 10px 0; text-align: right; font-weight: bold;">Number {{soul_urge_number}}</td>
+    </tr>
+  </table>
 
-<p>Tomorrow, we'll dive into your <strong>Soul Urge</strong> — the secret motivation numbers that dictate your private decisions.</p>
+  <h4 style="margin-top: 30px; font-family: 'Helvetica Neue', sans-serif;">📖 Your Day 1 Alignment Prompt:</h4>
+  <p style="color: #4A4A4A; font-style: italic; background-color: rgba(221, 177, 70, 0.05); padding: 15px; border-left: 3px solid #DDB146;">
+    Think about the last major conflict you faced. Did you handle it with the mature leadership of your numbers, or did you slip into the shadow side (e.g. overthinking, control, avoidance)? Simply noting the pattern is the first step of self-discovery.
+  </p>
 
-<p>Grounded in practice,</p>
-<p><strong>The MysticalDigits Team</strong></p>
+  <p style="margin-top: 30px;">Tomorrow, we will explore your <strong>Soul Urge</strong> — the silent, private drive that governs your relationships, career desires, and quiet moments.</p>
 
-<p style="font-size: 11px; color: #9D9380; font-style: italic;">P.S. Make sure to download your PDF workbook directly on the results page. It's generated fully client-side and acts as a physical journal for your reflections.</p>
+  <p>In alignment,</p>
+  <p><strong>The MysticalDigits Team</strong></p>
+
+  <div style="margin-top: 40px; padding-top: 20px; border-t: 1px solid rgba(18, 16, 28, 0.1); font-size: 12px; color: #9D9380; text-align: center;">
+    <p>Explore resources: <a href="https://mysticaldigits.com" style="color: #DDB146; text-decoration: none;">mysticaldigits.com</a> · Read our blog: <a href="https://mysticaldigits.com/blog" style="color: #DDB146; text-decoration: none;">Guides & Insights</a></p>
+  </div>
+</div>
 ```
 
 ---
 
-## 📧 Email 2: The Soul Urge (Your Secret Fuel)
-**Trigger**: 24 hours after Email 1
-**Subject**: What makes you feel emotionally clean, {{first_name}}? (Soul Urge {{soul_urge_number}})
-**Preheader**: The silent, private motivation behind your decisions and relationships.
+## 📧 Email 2: The Soul Urge & Private Values (Day 2)
+**Trigger**: 24 hours after Email 1.
+**Subject**: {{first_name}}, are you feeding your Soul Urge {{soul_urge_number}}?
+**Preheader**: The silent fuel dictating your core satisfaction in work and love.
 
 ```html
-<p style="text-align: center; font-family: sans-serif; font-size: 11px; letter-spacing: 0.3em; color: #DDB146; text-transform: uppercase;">✦ MYSTICALDIGITS ✦</p>
-
-<p>Hi {{first_name}},</p>
-
-<p>Your friends see your personality. Your colleagues see your work. But what does your soul crave when nobody is watching?</p>
-
-<p>In your profile, your <strong>Soul Urge (or Heart's Desire) is {{soul_urge_number}}</strong>. This number is computed strictly from the vowels of your birth name.</p>
-
-<p>Vowels carry the spiritual breath of a name. Because of this, the Soul Urge represents your private value system — the deep, non-negotiable fuel that must be honored for your decisions to feel emotionally clean.</p>
-
-<h3>✦ Your Soul Urge {{soul_urge_number}} Signature:</h3>
-<blockquote style="border-left: 3px solid #DDB146; padding-left: 15px; margin: 20px 0; color: #9D9380; font-style: italic;">
-  "{{soul_urge_short_description}}"
-</blockquote>
-
-<p>If you ignore this number, you might achieve material success but feel a persistent, hollow sense of misalignment. For example, if you have a Soul Urge 5, you need freedom and experience; force yourself into a repetitive 9-5 routine, and your soul will feel suffocated even if the pay is excellent.</p>
-
-<!-- CTA BUTTON -->
-<div style="text-align: center; margin: 30px 0;">
-  <a href="{{blueprint_results_url}}" style="background-color: #DDB146; color: #12101C; font-family: 'Montserrat', sans-serif; font-weight: bold; font-size: 13px; letter-spacing: 0.15em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 30px; display: inline-block;">
-    Re-evaluate Your Soul Urge Insight
-  </a>
+<div style="text-align: center; padding: 20px 0; background-color: #0B0B14;">
+  <p style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 13px; font-weight: bold; letter-spacing: 0.35em; color: #DDB146; text-transform: uppercase;">✦ MYSTICALDIGITS ✦</p>
 </div>
 
-<h3>✦ Day 2 Integration Prompt:</h3>
-<p>Look at your current career or core project. Is your Soul Urge {{soul_urge_number}} being nourished, or are you performing for external approval? Write down one micro-adjustment you can make this week to feed this urge.</p>
+<div style="font-family: 'Georgia', Times, serif; font-size: 16px; line-height: 1.8; color: #12101C; max-width: 600px; margin: 0 auto; padding: 30px 20px; background-color: #FCF6E9;">
+  <p>Hello {{first_name}},</p>
 
-<p>Tomorrow, we discuss your <strong>Expression Number</strong>: how you packages your gifts for real-world impact.</p>
+  <p>Yesterday, we discussed your Life Path. Today, we look deeper at your **Soul Urge Number {{soul_urge_number}}**.</p>
 
-<p>Warmly,</p>
-<p><strong>The MysticalDigits Team</strong></p>
+  <p>While the Life Path represents external lessons, the Soul Urge is calculated from the vowels of your birth name. In ancient naming rituals, vowels represented the breath of the spirit. Your Soul Urge represents your private motivation — what you need to feel satisfied, independent of public praise.</p>
+
+  <p>If your daily work, your boundaries, or your relationships do not satisfy your Soul Urge {{soul_urge_number}} fuel, you will experience a persistent feeling of depletion, regardless of how much money you make or how successful you look.</p>
+
+  <div style="background-color: rgba(221, 177, 70, 0.05); border-left: 3px solid #DDB146; padding: 18px; margin: 25px 0;">
+    <p style="margin: 0; font-weight: bold; font-family: sans-serif; font-size: 14px; color: #12101C; text-transform: uppercase; letter-spacing: 0.05em;">✦ Soul Urge {{soul_urge_number}} Core Drive:</p>
+    <p style="margin: 8px 0 0 0; color: #4A4A4A; font-style: italic;">"{{soul_urge_short_description}}"</p>
+  </div>
+
+  <p>To review your full Soul Urge readings and check your personal operating filters, click your bypass link below:</p>
+
+  <div style="text-align: center; margin: 35px 0;">
+    <a href="https://life-path.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.15em; text-transform: uppercase; padding: 18px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">
+      Review Soul Urge Readings ↗
+    </a>
+  </div>
+
+  <h4 style="font-family: 'Helvetica Neue', sans-serif;">📖 Your Day 2 Aligned Question:</h4>
+  <p style="color: #4A4A4A; font-style: italic;">
+    Look at your current environment. Are you compromising your core drive to keep the peace, or is your space designed to fuel your Soul Urge?
+  </p>
+
+  <p style="margin-top: 30px;">Tomorrow, we will explore your **Expression/Destiny Number**: how you are designed to packages your talents for real-world impact and authority.</p>
+
+  <p>To your alignment,</p>
+  <p><strong>The MysticalDigits Team</strong></p>
+
+  <div style="margin-top: 40px; padding-top: 20px; border-t: 1px solid rgba(18, 16, 28, 0.1); font-size: 12px; color: #9D9380; text-align: center;">
+    <p>Read about numbers: <a href="https://mysticaldigits.com/blog/birthday-numbers-meaning" style="color: #DDB146; text-decoration: none;">Birthday Meanings</a> · Support: <a href="https://mysticaldigits.com" style="color: #DDB146; text-decoration: none;">mysticaldigits.com</a></p>
+  </div>
+</div>
 ```
 
 ---
 
-## 📧 Email 3: The Destiny / Expression (Packaging Your Talents)
-**Trigger**: 24 hours after Email 2
-**Subject**: {{first_name}}, are you hiding your natural gift? (Destiny {{expression_number}})
-**Preheader**: How your birth name encodes your ultimate capabilities and legacy.
+## 📧 Email 3: Expression & Career Vectors (Day 3)
+**Trigger**: 24 hours after Email 2.
+**Subject**: {{first_name}}, are you using your natural talent vector? (Expression {{expression_number}})
+**Preheader**: The naming blueprint that defines your career success and legacy.
 
 ```html
-<p style="text-align: center; font-family: sans-serif; font-size: 11px; letter-spacing: 0.3em; color: #DDB146; text-transform: uppercase;">✦ MYSTICALDIGITS ✦</p>
-
-<p>Hello {{first_name}},</p>
-
-<p>Your Life Path represents <em>how</em> you grow. Your Soul Urge represents <em>why</em> you care. Today, let's look at your <strong>Expression (or Destiny) Number, which is {{expression_number}}</strong>.</p>
-
-<p>Calculated from every letter in your full birth name, this number encodes your natural talent channel. It represents your operational destiny — the specific way your mind, creativity, and voice are designed to shape the physical world.</p>
-
-<p>Your name is a cosmic blueprint of what you are meant to build:</p>
-
-<table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-  <tr style="background-color: rgba(221, 177, 70, 0.1);">
-    <td style="padding: 12px; border: 1px solid rgba(221, 177, 70, 0.2); font-weight: bold;">Talent Channel</td>
-    <td style="padding: 12px; border: 1px solid rgba(221, 177, 70, 0.2);">Destiny {{expression_number}}</td>
-  </tr>
-  <tr>
-    <td style="padding: 12px; border: 1px solid rgba(221, 177, 70, 0.2); font-weight: bold;">Ultimate Vision</td>
-    <td style="padding: 12px; border: 1px solid rgba(221, 177, 70, 0.2);">{{expression_title}}</td>
-  </tr>
-</table>
-
-<p>Many of us suppress our Expression energy because we are conditioned to follow safer, generic career paths. But when you lean into your Destiny {{expression_number}}, doors open, resistance drops, and your efforts gain massive leverage.</p>
-
-<!-- CTA BUTTON -->
-<div style="text-align: center; margin: 30px 0;">
-  <a href="{{blueprint_results_url}}" style="background-color: #DDB146; color: #12101C; font-family: 'Montserrat', sans-serif; font-weight: bold; font-size: 13px; letter-spacing: 0.15em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 30px; display: inline-block;">
-    Review Your Destiny Profile
-  </a>
+<div style="text-align: center; padding: 20px 0; background-color: #0B0B14;">
+  <p style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 13px; font-weight: bold; letter-spacing: 0.35em; color: #DDB146; text-transform: uppercase;">✦ MYSTICALDIGITS ✦</p>
 </div>
 
-<h3>✦ Day 3 Integration:</h3>
-<p>Identify your primary creative or work output. Does it align with the core talents of your Destiny number? How can you express this talent more visibly and unapologetically this week?</p>
+<div style="font-family: 'Georgia', Times, serif; font-size: 16px; line-height: 1.8; color: #12101C; max-width: 600px; margin: 0 auto; padding: 30px 20px; background-color: #FCF6E9;">
+  <p>Hello {{first_name}},</p>
 
-<p>Stay aligned,</p>
-<p><strong>The MysticalDigits Team</strong></p>
+  <p>Your Life Path shows the path of your growth. Your Soul Urge shows your fuel. Today, let’s unlock your <strong>Expression (Destiny) Number {{expression_number}}</strong>.</p>
+
+  <p>This number is computed from all letters in your birth name. In classical numerology, the Expression represents your tangible capabilities — how your mind, problem-solving skills, and output are built to affect the real world.</p>
+
+  <p>Your destiny profile represents your structural advantage:</p>
+  <table style="width: 100%; border-collapse: collapse; margin: 25px 0; font-family: sans-serif; font-size: 14px; border: 1px solid rgba(221,177,70,0.2);">
+    <tr style="background-color: rgba(221, 177, 70, 0.05);">
+      <td style="padding: 12px; font-weight: bold; border-bottom: 1px solid rgba(221,177,70,0.2);">Expression Vector</td>
+      <td style="padding: 12px; border-bottom: 1px solid rgba(221,177,70,0.2); font-weight: bold; text-align: right;">Number {{expression_number}}</td>
+    </tr>
+    <tr>
+      <td style="padding: 12px; font-weight: bold;">Legacy Archetype</td>
+      <td style="padding: 12px; text-align: right; font-style: italic;">{{expression_title}}</td>
+    </tr>
+  </table>
+
+  <p>When you align your work with your Expression {{expression_number}} archetype, your output carries leverage. You stop feeling like you are pushing a boulder uphill and start working with your natural design.</p>
+
+  <div style="text-align: center; margin: 35px 0;">
+    <a href="https://life-path.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.15em; text-transform: uppercase; padding: 18px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">
+      See Your Destiny Interpretation ↗
+    </a>
+  </div>
+
+  <h4 style="font-family: 'Helvetica Neue', sans-serif;">📖 Your Day 3 Integration:</h4>
+  <p style="color: #4A4A4A; font-style: italic;">
+    Identify the single most common task in your week. Does it align with the strengths of your Destiny number, or does it drain you because it asks you to operate against your code?
+  </p>
+
+  <p style="margin-top: 30px;">Tomorrow, we talk about **timing**. We will look at your Personal Year and Month to prevent you from forcing decisions in the wrong season.</p>
+
+  <p>In flow,</p>
+  <p><strong>The MysticalDigits Team</strong></p>
+
+  <div style="margin-top: 40px; padding-top: 20px; border-t: 1px solid rgba(18, 16, 28, 0.1); font-size: 12px; color: #9D9380; text-align: center;">
+    <p>Read about expression: <a href="https://mysticaldigits.com/blog/expression-career-guide" style="color: #DDB146; text-decoration: none;">Career Vector Guide</a> · Home: <a href="https://mysticaldigits.com" style="color: #DDB146; text-decoration: none;">mysticaldigits.com</a></p>
+  </div>
+</div>
 ```
 
 ---
 
-## 📧 Email 4: Timing & Rhythm (Personal Year + Month)
-**Trigger**: 24 hours after Email 3
-**Subject**: Stop forcing the wrong season, {{first_name}}
-**Preheader**: Your current Personal Month {{personal_month}} is a cosmic filter.
+## 📧 Email 4: Personal Timing & Cycles (Day 4)
+**Trigger**: 24 hours after Email 3.
+**Subject**: Stop fighting the tide, {{first_name}}
+**Preheader**: Why Personal Year {{personal_year}} and Personal Month {{personal_month}} dictate your success.
 
 ```html
-<p style="text-align: center; font-family: sans-serif; font-size: 11px; letter-spacing: 0.3em; color: #DDB146; text-transform: uppercase;">✦ MYSTICALDIGITS ✦</p>
-
-<p>Hi {{first_name}},</p>
-
-<p>Have you ever had a season where every door you knocked on slammed shut? Where you pushed, worked 80-hour weeks, and made zero progress?</p>
-
-<p>And conversely, have you had times where you barely nudged a door and it swung wide open, leading to sudden windfalls?</p>
-
-<p>This isn't luck. It's <strong>timing</strong>.</p>
-
-<p>In your profile, your <strong>Personal Year is {{personal_year}}</strong>, and right now, you are navigating a <strong>Personal Month {{personal_month}}</strong>.</p>
-
-<p>Just like nature has winters for rest and springs for planting, your life operates on a 9-year cyclic calendar:</p>
-<ul>
-  <li>If you are in a <strong>1 Year</strong>, it is time for bold beginnings and planting seeds. Pushing is rewarded.</li>
-  <li>If you are in a <strong>7 Year</strong>, it is time for introspection, research, and recovery. Pushing is penalized; studying is rewarded.</li>
-  <li>If you are in a <strong>9 Year</strong>, it is time to release expired commitments and clean house. Starting new ventures will feel like walking through mud.</li>
-</ul>
-
-<p>Your current Personal Month {{personal_month}} acts as a specific filter for the next 30 days. Don't fight the tide. Ride the current.</p>
-
-<!-- CTA BUTTON -->
-<div style="text-align: center; margin: 30px 0;">
-  <a href="{{blueprint_results_url}}" style="background-color: #DDB146; color: #12101C; font-family: 'Montserrat', sans-serif; font-weight: bold; font-size: 13px; letter-spacing: 0.15em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 30px; display: inline-block;">
-    Check Your Personal Timing Plan
-  </a>
+<div style="text-align: center; padding: 20px 0; background-color: #0B0B14;">
+  <p style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 13px; font-weight: bold; letter-spacing: 0.35em; color: #DDB146; text-transform: uppercase;">✦ MYSTICALDIGITS ✦</p>
 </div>
 
-<h3>✦ Day 4 Action:</h3>
-<p>Read the themes for your Personal Year {{personal_year}} and Personal Month {{personal_month}} in your dashboard. Are you forcing a seed-planting phase during a harvest season? Adjust your calendar pressure levels to match the flow.</p>
+<div style="font-family: 'Georgia', Times, serif; font-size: 16px; line-height: 1.8; color: #12101C; max-width: 600px; margin: 0 auto; padding: 30px 20px; background-color: #FCF6E9;">
+  <p>Hi {{first_name}},</p>
 
-<p>Tomorrow, we reveal the final step: assembling all these numbers into your personal, everyday Operating System.</p>
+  <p>Why do some months feel like walking through wet cement, while other months bring effortless windfalls, partnerships, and breakthroughs?</p>
 
-<p>In harmony,</p>
-<p><strong>The MysticalDigits Team</strong></p>
+  <p>The answer lies in your timing cycles. You are currently navigating **Personal Year {{personal_year}}** and **Personal Month {{personal_month}}**.</p>
+
+  <p>Numerology groups life into 9-year waves. Each year has a clean season:</p>
+  <ul>
+    <li><strong>1 Year (Initiation)</strong>: A season to plant bold seeds, take risks, and go first.</li>
+    <li><strong>7 Year (Inner Growth)</strong>: A season for study, solitude, and research. Pushing for external scale this year often leads to burnout.</li>
+    <li><strong>9 Year (Completion)</strong>: A season to close loops, archive projects, and let go of relationships. Pushing for new commitments during a 9 Year feels like swimming upstream.</li>
+  </ul>
+
+  <p>Your current Personal Month is {{personal_month}}. Use this filter to decide what to say yes to over the next 30 days.</p>
+
+  <div style="text-align: center; margin: 35px 0;">
+    <a href="https://life-path.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.15em; text-transform: uppercase; padding: 18px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">
+      View Your Timing Calendar ↗
+    </a>
+  </div>
+
+  <h4 style="font-family: 'Helvetica Neue', sans-serif;">📖 Your Day 4 Focus Prompt:</h4>
+  <p style="color: #4A4A4A; font-style: italic;">
+    Are you forcing a seed-planting phase during a clearing season? Align your workload with the season of your Personal Year {{personal_year}}.
+  </p>
+
+  <p style="margin-top: 30px;">Tomorrow, we will show you how to tie all these numbers together into a single, cohesive **Personal Operating System** to guide your weekly decisions.</p>
+
+  <p>With perspective,</p>
+  <p><strong>The MysticalDigits Team</strong></p>
+
+  <div style="margin-top: 40px; padding-top: 20px; border-t: 1px solid rgba(18, 16, 28, 0.1); font-size: 12px; color: #9D9380; text-align: center;">
+    <p>Read about timing: <a href="https://mysticaldigits.com/blog/numerology-cycles" style="color: #DDB146; text-decoration: none;">9-Year Cycle Guide</a> · Main site: <a href="https://mysticaldigits.com" style="color: #DDB146; text-decoration: none;">mysticaldigits.com</a></p>
+  </div>
+</div>
 ```
 
 ---
 
-## 📧 Email 5: The Premium Upgrade (Your Personal Operating System)
-**Trigger**: 24 hours after Email 4
-**Subject**: {{first_name}}, meet your Personal Operating System (Full Upgrade)
+## 📧 Email 5: The Premium Upgrade (Day 5)
+**Trigger**: 24 hours after Email 4.
+**Subject**: {{first_name}}, meet your Custom Personal Operating System
 **Preheader**: The ultimate 64-page custom workbook built for your specific frequencies.
 
 ```html
-<p style="text-align: center; font-family: sans-serif; font-size: 11px; letter-spacing: 0.3em; color: #DDB146; text-transform: uppercase;">✦ MYSTICALDIGITS ✦</p>
-
-<p>Hello {{first_name}},</p>
-
-<p>Over the last four days, you have analyzed your Life Path, Soul Urge, Destiny, and Timing patterns.</p>
-
-<p>But here is the truth: <strong>they are not isolated numbers</strong>. They are gears in a single, complex, beautiful machine: your Personal Operating System.</p>
-
-<p>To help you integrate this blueprint into your actual decisions, career transitions, relationships, and finance habits, we designed the **MysticalDigits Premium Workbook**.</p>
-
-<p>This is a custom-generated, 64-page PDF notebook built exclusively for your name and birth date. Unlike general horoscopes, it is a highly practical, interactive workbook tailored for you.</p>
-
-<h3>✦ Inside Your Premium Workbook:</h3>
-<ul>
-  <li><strong>Detailed Shadow-to-Strategy Maps:</strong> How to stop repeating your Life Path {{life_path_number}}'s biggest blocks.</li>
-  <li><strong>Advanced Career & Money Alignment:</strong> Exact setups for your Destiny {{expression_number}} talent.</li>
-  <li><strong>Relationship Dynamics:</strong> How your Soul Urge {{soul_urge_number}} communicates, loves, and feels safe.</li>
-  <li><strong>Complete 12-Month Timing Calendar:</strong> Day-by-day timing rules for your Personal Year {{personal_year}}.</li>
-  <li><strong>Printable Journal Pages & Rituals:</strong> Focused questions to fill out in your quiet reflection time.</li>
-</ul>
-
-<!-- CTA BUTTON -->
-<div style="text-align: center; margin: 30px 0;">
-  <a href="{{premium_checkout_url}}" style="background-color: #DDB146; color: #12101C; font-family: 'Montserrat', sans-serif; font-weight: bold; font-size: 13px; letter-spacing: 0.15em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 30px; display: inline-block; box-shadow: 0 4px 15px rgba(221, 177, 70, 0.4);">
-    Get Your Custom 64-Page Workbook
-  </a>
+<div style="text-align: center; padding: 20px 0; background-color: #0B0B14;">
+  <p style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 13px; font-weight: bold; letter-spacing: 0.35em; color: #DDB146; text-transform: uppercase;">✦ MYSTICALDIGITS ✦</p>
 </div>
 
-<p>It is time to stop guessing your path and start executing your design with clarity and confidence.</p>
+<div style="font-family: 'Georgia', Times, serif; font-size: 16px; line-height: 1.8; color: #12101C; max-width: 600px; margin: 0 auto; padding: 30px 20px; background-color: #FCF6E9;">
+  <p>Hello {{first_name}},</p>
 
-<p>To your deepest alignment,</p>
-<p><strong>The MysticalDigits Team</strong></p>
+  <p>Over the last four days, you have analyzed your core numbers individually.</p>
+
+  <p>But they are not meant to be read in isolation. Together, your numbers form a single **Personal Operating System** — a custom playbook for choosing partners, negotiating money, aligning work, and timing actions.</p>
+
+  <p>To help you implement this blueprint in your daily life, we created the **MysticalDigits Premium Workbook**.</p>
+
+  <p>This is a custom-generated, 64-page PDF workbook built exclusively for you. It is a highly practical, interactive journal designed for deep reflection and daily action.</p>
+
+  <h3 style="font-family: 'Helvetica Neue', sans-serif; border-bottom: 1px solid #DDB146; padding-bottom: 8px;">✦ What’s Inside Your Premium OS Workbook:</h3>
+  <ul>
+    <li><strong>Advanced Shadow-to-Strategy Maps:</strong> How to convert your numbers' typical friction points into practical behaviors.</li>
+    <li><strong>Wealth & Legacy Settings:</strong> Leveraging your Expression {{expression_number}} for career authority.</li>
+    <li><strong>Interactive 12-Month Calendar:</strong> Specific timing rules, rituals, and monthly tracking pages.</li>
+    <li><strong>Printable Reflection Journals:</strong> High-value prompts to clarify your goals and boundaries.</li>
+  </ul>
+
+  <!-- HIGH CONVERTING CTA BUTTON -->
+  <div style="text-align: center; margin: 35px 0;">
+    <a href="https://life-path.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.15em; text-transform: uppercase; padding: 18px 32px; text-decoration: none; border-radius: 4px; display: inline-block; box-shadow: 0 4px 15px rgba(221, 177, 70, 0.4);">
+      Get Your Custom Operating System Workbook ↗
+    </a>
+  </div>
+
+  <p>It’s time to stop guessing your path and start executing your design with absolute clarity.</p>
+
+  <p>To your deepest alignment,</p>
+  <p><strong>The MysticalDigits Team</strong></p>
+
+  <div style="margin-top: 40px; padding-top: 20px; border-t: 1px solid rgba(18, 16, 28, 0.1); font-size: 12px; color: #9D9380; text-align: center;">
+    <p>Visit us: <a href="https://mysticaldigits.com" style="color: #DDB146; text-decoration: none;">mysticaldigits.com</a> · Support: <a href="mailto:support@mysticaldigits.com" style="color: #DDB146; text-decoration: none;">support@mysticaldigits.com</a></p>
+  </div>
+</div>
+```
