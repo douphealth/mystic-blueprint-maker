@@ -16,6 +16,8 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
+  const [emailSentSuccessfully, setEmailSentSuccessfully] = useState(true);
+  const [emailErrorMessage, setEmailErrorMessage] = useState("");
 
   const firstName = userName.split(" ")[0];
 
@@ -26,25 +28,32 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
     }
     setError("");
     setSending(true);
+    setEmailSentSuccessfully(true);
+    setEmailErrorMessage("");
 
     try {
-      await submitLifePathLead({
+      const res = await submitLifePathLead({
         email: email.trim(),
         fullName: userName,
         birthDate: birthDate ? birthDate.toISOString().split("T")[0] : undefined,
       });
-    } catch (leadError) {
+      if (!res.ok) {
+        setEmailSentSuccessfully(false);
+        setEmailErrorMessage(res.message || "Failed to send email");
+      }
+    } catch (leadError: any) {
       console.error("Life-path lead capture failed", leadError);
-      setError("We couldn't send the email yet. Please try again in a moment.");
-      setSending(false);
-      return;
+      setEmailSentSuccessfully(false);
+      setEmailErrorMessage(leadError instanceof Error ? leadError.message : String(leadError));
     }
 
     setSent(true);
     setSending(false);
 
     // Let user proceed immediately while the welcome email lands in their inbox.
-    setTimeout(() => onComplete(email.trim()), 900);
+    // Give them a bit more time if it failed to let them read the warning status.
+    const delay = emailSentSuccessfully ? 900 : 2500;
+    setTimeout(() => onComplete(email.trim()), delay);
   };
 
   return (
@@ -160,17 +169,31 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", delay: 0.2 }}
-                className="w-20 h-20 mx-auto mb-6 rounded-full border border-emerald-500/30 flex items-center justify-center bg-emerald-500/10"
+                className={`w-20 h-20 mx-auto mb-6 rounded-full border flex items-center justify-center ${
+                  emailSentSuccessfully 
+                    ? "border-emerald-500/30 bg-emerald-500/10" 
+                    : "border-amber-500/30 bg-amber-500/10"
+                }`}
               >
-                <CheckCircle className="w-8 h-8 text-emerald-400" />
+                {emailSentSuccessfully ? (
+                  <CheckCircle className="w-8 h-8 text-emerald-400" />
+                ) : (
+                  <span className="text-amber-400 font-display text-2xl font-bold">!</span>
+                )}
               </motion.div>
 
               <h2 className="font-display text-2xl text-gradient-gold mb-3">
-                Your blueprint is unlocked!
+                {emailSentSuccessfully ? "Your blueprint is unlocked!" : "Blueprint Unlocked (With Warnings)"}
               </h2>
-              <p className="font-body text-lg text-muted-foreground mb-2">
-                We emailed <span className="text-foreground">{email}</span> your premium usage guide.
-              </p>
+              {emailSentSuccessfully ? (
+                <p className="font-body text-lg text-muted-foreground mb-2">
+                  We emailed <span className="text-foreground">{email}</span> your premium usage guide.
+                </p>
+              ) : (
+                <p className="font-body text-lg text-amber-500/90 mb-2">
+                  Warning: We couldn't send your email guide ({emailErrorMessage}).
+                </p>
+              )}
               <p className="font-body text-base text-muted-foreground/60">
                 Opening your reading now — your Download Free Blueprint PDF button appears on the results page.
               </p>

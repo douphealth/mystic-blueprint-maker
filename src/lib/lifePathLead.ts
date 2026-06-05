@@ -12,6 +12,7 @@ export interface LifePathLeadResult {
 }
 
 export async function submitLifePathLead(payload: LifePathLeadPayload): Promise<LifePathLeadResult> {
+  const isDev = import.meta.env.DEV || window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
   try {
     const response = await fetch("/api/life-path-lead", {
       method: "POST",
@@ -27,20 +28,35 @@ export async function submitLifePathLead(payload: LifePathLeadPayload): Promise<
     });
 
     if (response.status === 404) {
-      console.warn("API endpoint '/api/life-path-lead' not found. This is expected in custom standalone deployments. Bypassing lead gate gracefully.");
-      return { ok: true, message: "Standalone deployment fallback" };
+      const msg = "API endpoint '/api/life-path-lead' not found. This is expected in custom standalone deployments.";
+      console.error("API failure:", msg);
+      if (isDev) {
+        console.warn(`${msg} Bypassing lead gate gracefully in local development.`);
+        return { ok: true, message: "Standalone deployment fallback" };
+      }
+      return { ok: false, message: msg };
     }
 
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok || data?.ok === false) {
-      throw new Error(data?.message || "Could not send your blueprint email right now.");
+      const errMsg = data?.message || `API error: ${response.status} ${response.statusText}`;
+      console.error("Email service failure:", errMsg);
+      if (isDev) {
+        console.warn("Email service failure. Bypassing lead gate gracefully in local development.");
+        return { ok: true, message: "Fallback bypass enabled" };
+      }
+      return { ok: false, message: errMsg };
     }
 
-    return data as LifePathLeadResult;
-  } catch (error) {
-    console.error("Life-path lead submission failed:", error);
-    // Return ok: true so that users are not blocked on custom deployments
-    return { ok: true, message: "Fallback bypass enabled" };
+    return { ok: true, ...data };
+  } catch (error: any) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error("API connection failure:", error);
+    if (isDev) {
+      console.warn("API connection failure. Bypassing lead gate gracefully in local development.");
+      return { ok: true, message: "Fallback bypass enabled" };
+    }
+    return { ok: false, message: errMsg };
   }
 }

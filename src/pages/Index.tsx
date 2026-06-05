@@ -17,7 +17,7 @@ import { getInterpretation, birthdayInterpretations } from "@/lib/interpretation
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
-type Phase = "landing" | "email-gate" | "calculating" | "revealing" | "results";
+type Phase = "landing" | "email-gate" | "calculating" | "revealing" | "results" | "url-error";
 
 const loadingSteps = [
   "Mapping your birth numbers…",
@@ -34,6 +34,9 @@ const Index = () => {
   const [userDob, setUserDob] = useState<Date | null>(null);
   const [phase, setPhase] = useState<Phase>("landing");
   const [loadingStep, setLoadingStep] = useState(0);
+  const [urlError, setUrlError] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+  const [autoDownload, setAutoDownload] = useState(false);
 
   // Auto-advance past email gate if user becomes authenticated
   useEffect(() => {
@@ -45,18 +48,51 @@ const Index = () => {
   // Load profile from URL query parameters if present to bypass intake quiz and email gate
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const nameParam = params.get("name");
-    const dobParam = params.get("dob");
-    if (nameParam && dobParam) {
-      const parsedDob = new Date(dobParam);
-      if (!isNaN(parsedDob.getTime())) {
-        const trimmedName = nameParam.trim();
-        setUserName(trimmedName);
-        setUserDob(parsedDob);
-        const calculatedProfile = calculateFullProfile(trimmedName, parsedDob);
-        setProfile(calculatedProfile);
-        setPhase("results");
+    const nameParam = params.get("name") || params.get("full_name") || params.get("fullname");
+    const dobParam = params.get("dob") || params.get("birth_date") || params.get("birthDate");
+    const emailParam = params.get("email");
+    const downloadParam = params.get("download");
+
+    if (nameParam || dobParam) {
+      if (!nameParam || !dobParam) {
+        setUrlError("Both name and birth date parameters are required to bypass the quiz.");
+        setPhase("url-error");
+        return;
       }
+
+      // Decode '+' as spaces
+      const decodedName = nameParam.replace(/\+/g, " ").trim();
+      const decodedDob = dobParam.trim();
+
+      // Validate date format strictly as YYYY-MM-DD
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(decodedDob)) {
+        setUrlError(`Invalid birth date format: "${decodedDob}". Please use YYYY-MM-DD format (e.g. 1990-05-15).`);
+        setPhase("url-error");
+        return;
+      }
+
+      const parsedDob = new Date(decodedDob);
+      if (isNaN(parsedDob.getTime())) {
+        setUrlError(`Invalid birth date: "${decodedDob}". Please verify the date is correct.`);
+        setPhase("url-error");
+        return;
+      }
+
+      setUserName(decodedName);
+      setUserDob(parsedDob);
+
+      if (emailParam) {
+        setUserEmail(emailParam.trim());
+      }
+
+      if (downloadParam === "1") {
+        setAutoDownload(true);
+      }
+
+      const calculatedProfile = calculateFullProfile(decodedName, parsedDob);
+      setProfile(calculatedProfile);
+      setPhase("results");
     }
   }, []);
 
@@ -105,6 +141,38 @@ const Index = () => {
       }
     }, 3800);
   };
+
+  // ── URL Error ──
+  if (phase === "url-error") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-5">
+        <FloatingParticles />
+        <div className="relative z-10 text-center max-w-md w-full bg-card/60 border border-destructive/20 p-8 rounded-3xl shadow-xl">
+          <div className="w-16 h-16 bg-destructive/10 border border-destructive/30 rounded-full flex items-center justify-center mx-auto mb-6">
+            <span className="text-destructive font-display text-2xl font-bold">!</span>
+          </div>
+          <h2 className="font-display text-2xl text-gradient-gold mb-3">Invalid Link</h2>
+          <p className="font-body text-sm text-muted-foreground mb-6 leading-relaxed">
+            {urlError}
+          </p>
+          <button
+            onClick={() => {
+              setPhase("landing");
+              setUserName("");
+              setUserDob(null);
+              setUrlError("");
+              setUserEmail("");
+              setAutoDownload(false);
+              window.history.replaceState({}, document.title, window.location.pathname);
+            }}
+            className="w-full h-12 bg-primary text-primary-foreground rounded-xl font-display text-sm tracking-widest uppercase hover:bg-gold-light transition-all duration-300"
+          >
+            Restart Quiz
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // ── Email Gate ──
   if (phase === "email-gate") {
@@ -282,7 +350,7 @@ const Index = () => {
 
           {/* Free PDF Download */}
           <div className="mb-14">
-            <FreePdfButton profile={profile} name={userName} />
+            <FreePdfButton profile={profile} name={userName} autoDownload={autoDownload} />
           </div>
 
           {/* ── PREMIUM UPSELL ── */}
