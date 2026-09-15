@@ -46,6 +46,14 @@ vi.mock("jspdf", () => {
         setDrawColor: mockSetDrawColor,
         setLineWidth: mockSetLineWidth,
         setFillColor: mockSetFillColor,
+        // used by the premium engine to embed the brand fonts
+        addFileToVFS: vi.fn(),
+        addFont: vi.fn(),
+        setCharSpace: vi.fn(),
+        getCharSpace: vi.fn().mockReturnValue(0),
+        setLineDashPattern: vi.fn(),
+        output: vi.fn().mockReturnValue(new ArrayBuffer(8)),
+        getNumberOfPages: vi.fn().mockReturnValue(1),
         splitTextToSize: vi.fn().mockImplementation((txt) => [txt]),
         getTextWidth: vi.fn().mockReturnValue(10),
       };

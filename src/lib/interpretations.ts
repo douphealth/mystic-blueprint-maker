@@ -221,3 +221,46 @@ export function getInterpretation(type: string, number: number): NumberInterpret
     default: return undefined;
   }
 }
+
+/**
+ * The Pythagorean tables only cover 1-9 plus the master numbers 11/22/33.
+ * Three calculators can legitimately fall outside that set:
+ *
+ *   calculateSoulUrge()     -> 0 when the name has no A/E/I/O/U ("Lynn Smyth")
+ *   calculatePersonality()  -> 0 when the name has no consonants ("Aoi")
+ *   calculateExpression()   -> 0 when the name has no Latin letters at all
+ *                              (Cyrillic, Chinese, Arabic, digits, empty)
+ *
+ * Previously the results screen used `getInterpretation(...)!`, so any of
+ * those inputs returned undefined, <NumerologySection> threw on
+ * `interpretation.fullText`, and — with no error boundary — the entire app
+ * unmounted into a blank page. This accessor always returns something
+ * renderable, and says plainly why the number is missing instead of
+ * inventing a value.
+ */
+export function getInterpretationSafe(type: string, number: number): NumberInterpretation {
+  const found = getInterpretation(type, number);
+  if (found) return found;
+
+  const reason =
+    type === "soulUrge"
+      ? "Your birth name contains no vowels (A, E, I, O, U), so the vowel sum is zero and this number cannot be derived."
+      : type === "personality"
+        ? "Your birth name contains no consonants, so this number cannot be derived."
+        : type === "expression"
+          ? "Your birth name contains no Latin letters (A-Z), so this number cannot be derived."
+          : "This number could not be derived from the name and birth date provided.";
+
+  return {
+    title: "Not derivable from this name",
+    keywords: ["Data Incomplete", "Latin Alphabet"],
+    shortDesc: reason,
+    fullText: `${reason}
+
+This is not a flaw in your chart — it is a limit of the Pythagorean method, which maps the letters A to Z onto the numbers 1 to 9. Names written in another script, or names that happen to lack a whole class of letters, simply fall outside the system for this particular number.
+
+Everything else on this page is still calculated normally from your birth date and any letters that were readable. Treat this card as a blank rather than a warning.
+
+To fill it in, reload this page and enter your full birth name exactly as it appears on your birth certificate, using Latin letters. If your name is not written in Latin script, a transliteration (for example a passport spelling) will give you a complete chart.`,
+  };
+}

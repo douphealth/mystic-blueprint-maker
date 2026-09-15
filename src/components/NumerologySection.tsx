@@ -6,17 +6,28 @@ import { useRef } from "react";
 interface NumerologySectionProps {
   icon: string;
   number: number;
-  interpretation: NumberInterpretation;
+  interpretation?: NumberInterpretation;
   index: number;
 }
 
-const NumerologySection = ({ icon, number, interpretation, index }: NumerologySectionProps) => {
+// Belt-and-braces: this component dereferences `interpretation` during render,
+// so a missing value used to throw and blank the whole page. Callers should
+// use getInterpretationSafe(); this default guarantees a render either way.
+const FALLBACK_INTERPRETATION: NumberInterpretation = {
+  title: "Not derivable from this name",
+  keywords: [],
+  shortDesc: "This number could not be derived from the details provided.",
+  fullText:
+    "This number could not be derived from the details provided. Reload the page and enter your full birth name using Latin letters for a complete chart.",
+};
+
+const NumerologySection = ({ icon, number, interpretation = FALLBACK_INTERPRETATION, index }: NumerologySectionProps) => {
   const category = getNumberCategory(number);
   const color = getCategoryColor(category);
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-40px" });
 
-  const paragraphs = interpretation.fullText.split('\n\n');
+  const paragraphs = (interpretation.fullText || "").split('\n\n').filter(Boolean);
 
   return (
     <motion.section

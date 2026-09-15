@@ -3,17 +3,20 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Lock, Heart, TrendingUp, Compass, Lightbulb, Download, Star, Loader2, Zap, Layers } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { FREE_PAGE_COUNT, PREMIUM_PAGE_LABEL, PREMIUM_PAGE_COUNT } from "@/lib/editions";
 import { useToast } from "@/hooks/use-toast";
 
 const premiumModules = [
-  { icon: Compass, title: "Deep Shadow Pattern Analysis", desc: "Uncover hidden sabotage patterns, blind spots, and karmic wounds blocking your growth" },
-  { icon: Heart, title: "Relationship Compatibility Map", desc: "Love patterns, ideal partner vibrations, red flags, and how to attract your soul match" },
-  { icon: Layers, title: "Life Phase Map (Pinnacles & Challenges)", desc: "4 Pinnacles + 4 Challenges with exact age ranges and guidance for each phase" },
-  { icon: Star, title: "Personalized Lucky Codes", desc: "Your power colors, crystals, affirmations, and optimal days calibrated to your numbers" },
-  { icon: Lightbulb, title: "Career & Purpose Alignment", desc: "Specific career paths, business ideas, and purpose work aligned with your vibration" },
-  { icon: TrendingUp, title: "Growth Acceleration Prompts", desc: "Actionable exercises, journal prompts, and rituals personalized for your exact blueprint" },
-  { icon: Zap, title: "Annual Forecast Deep Dive", desc: "Month-by-month strategic guidance with peak timing for major life decisions" },
-  { icon: Download, title: "Premium 25-Page Blueprint PDF", desc: "Museum-quality printable report — a keepsake you'll reference for years" },
+  { icon: Compass, title: "Deep Shadow Pattern Analysis", desc: "The trigger, the coping move, the cost, and the mature response — for every number in your chart" },
+  { icon: Heart, title: "Relationship Compatibility Map", desc: "Your signature read against all 12 Life Paths, plus red flags and green lights you can actually use" },
+  { icon: Layers, title: "Life Phase Map (Pinnacles & Challenges)", desc: "All 4 Pinnacles with exact age ranges, and all 4 Challenges worked through one at a time" },
+  { icon: Star, title: "Personalised Lucky Codes", desc: "Power colours, crystal, element, direction, favourable days and numbers, plus an affirmation per number" },
+  { icon: Lightbulb, title: "Career & Purpose Alignment", desc: "Environments, roles and industries for your Expression — plus a 7-line fit grid for any opportunity" },
+  { icon: TrendingUp, title: "Wealth & Legacy Settings", desc: "Your money archetype, where it leaks, the one rule that fixes it, and a legacy builder worksheet" },
+  { icon: Zap, title: "Annual Forecast Deep Dive", desc: "Your Personal Year in depth, your position in the nine-year wave, and four months at a time with full detail" },
+  { icon: Compass, title: "Personal Operating System", desc: "Five principles, a four-line decision filter, a 90-day execution board and a quarterly review protocol" },
+  { icon: TrendingUp, title: "Growth Acceleration Prompts", desc: "35 uncomfortable questions across 7 domains, with space to actually write the answers" },
+  { icon: Download, title: `${PREMIUM_PAGE_LABEL} Premium Edition PDF`, desc: "Museum-quality printable report — a keepsake you'll reference for years" },
 ];
 
 const PremiumPaywall = () => {
@@ -60,11 +63,11 @@ const PremiumPaywall = () => {
           <Lock className="w-7 h-7 text-primary" />
         </motion.div>
         <h2 className="font-display text-2xl md:text-3xl text-gradient-gold mb-3">
-          Go Deeper — Complete Mystical Blueprint
+          Go Deeper — The Premium Edition
         </h2>
         <p className="font-body text-base text-foreground/60 max-w-md mx-auto leading-relaxed">
-          You've seen all 6 core numbers. The Complete Blueprint takes you 10× deeper —
-          with shadow analysis, relationship mapping, life phase guidance, lucky codes, and a premium PDF.
+          You've read your six core numbers in a {FREE_PAGE_COUNT}-page workbook. The Premium Edition
+          is {PREMIUM_PAGE_COUNT} pages — nine further sections that turn the reading into a working system.
         </p>
       </div>
 
@@ -107,7 +110,7 @@ const PremiumPaywall = () => {
             {loading ? (
               <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing…</>
             ) : (
-              "Unlock Complete Blueprint — $7.99"
+              "Unlock The Premium Edition — $7.99"
             )}
           </Button>
           <p className="font-ui text-[10px] text-muted-foreground mt-3 tracking-wider">

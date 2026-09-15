@@ -24,3 +24,11 @@ dist-ssr
 *.sw?
 .env
 .env.*
+
+# Local PDF QA harness + build helpers (not part of the app)
+_qa/
+_fonts_raw/
+_*
+
+# Vite config temp files
+vite.config.ts.timestamp-*.mjs

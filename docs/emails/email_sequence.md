@@ -1,5 +1,24 @@
 # MysticalDigits: High-Converting & Personalized Onboarding Email Sequence
 
+> ## ⚠️ Two fixes required before this sequence will work
+>
+> **1. The CTA domain was wrong.** Every button previously pointed at
+> `life-path.mysticaldigits.com`. That host 301-redirects to
+> `mysticaldigits.com/life-path-number-calculator/` and **strips the entire
+> query string**, so `?name=…&dob=…&download=1` never reached the app. The
+> personalisation and the auto-download both silently failed. All links below
+> now point at `blueprint.mysticaldigits.com`, which serves the app.
+>
+> **2. The sender domain is not branded.** Emails currently send from
+> `digitsmystical@11048820.brevosend.com` — Brevo's *shared* domain, which
+> lands in spam. Verify `mysticaldigits.com` in Brevo and send from an address
+> on that domain instead.
+>
+> **3. `dob` must be ISO `YYYY-MM-DD`.** The app rejects any other format with
+> an "Invalid Link" screen. Check what your ESP actually emits for the birth
+> date field before launching — several produce `DD/MM/YYYY` by default.
+
+
 This email sequence uses dynamic query parameters to send returning users directly to their calculated results and premium PDF workbook, bypassing the intake quiz entirely.
 
 ---
@@ -10,21 +29,21 @@ To prevent subscribers from having to take the quiz again, you must construct th
 Use this format for your CTA buttons:
 
 1. **Primary CTA (Open Reading & Auto-Download PDF):**
-   `https://life-path.mysticaldigits.com/?name=YOUR_NAME_TAG&dob=YOUR_DOB_TAG&download=1` (or `{{pdf_url}}` if pre-mapped to this URL)
+   `https://blueprint.mysticaldigits.com/?name=YOUR_NAME_TAG&dob=YOUR_DOB_TAG&download=1` (or `{{pdf_url}}` if pre-mapped to this URL)
 
 2. **Secondary CTA (Open Interactive Reading only):**
-   `https://life-path.mysticaldigits.com/?name=YOUR_NAME_TAG&dob=YOUR_DOB_TAG`
+   `https://blueprint.mysticaldigits.com/?name=YOUR_NAME_TAG&dob=YOUR_DOB_TAG`
 
 ### 📋 Platform-Specific Merge Tag Reference Table
 
 | ESP Platform | Name Merge Tag | Date of Birth (YYYY-MM-DD) Merge Tag | Example Primary CTA Link |
 | :--- | :--- | :--- | :--- |
-| **Loops.so** | `{{contact.name}}` | `{{contact.dob}}` | `https://life-path.mysticaldigits.com/?name={{contact.name}}&dob={{contact.dob}}&download=1` |
-| **ActiveCampaign** | `%FIRSTNAME% %LASTNAME%` | `%BIRTH_DATE%` | `https://life-path.mysticaldigits.com/?name=%FIRSTNAME%+%LASTNAME%&dob=%BIRTH_DATE%&download=1` |
-| **Mailchimp** | `*|FNAME|* *|LNAME|*` | `*|DOB|*` | `https://life-path.mysticaldigits.com/?name=*|FNAME|*+*|LNAME|*&dob=*|DOB|*&download=1` |
-| **ConvertKit** | `{{ subscriber.first_name }}` | `{{ subscriber.cf_birth_date }}` | `https://life-path.mysticaldigits.com/?name={{ subscriber.first_name }}&dob={{ subscriber.cf_birth_date }}&download=1` |
-| **Klaviyo** | `{{ person.first_name }}` | `{{ person.birth_date }}` | `https://life-path.mysticaldigits.com/?name={{ person.first_name }}&dob={{ person.birth_date }}&download=1` |
-| **Resend** | `{{ name }}` | `{{ dob }}` | `https://life-path.mysticaldigits.com/?name={{ name }}&dob={{ dob }}&download=1` |
+| **Loops.so** | `{{contact.name}}` | `{{contact.dob}}` | `https://blueprint.mysticaldigits.com/?name={{contact.name}}&dob={{contact.dob}}&download=1` |
+| **ActiveCampaign** | `%FIRSTNAME% %LASTNAME%` | `%BIRTH_DATE%` | `https://blueprint.mysticaldigits.com/?name=%FIRSTNAME%+%LASTNAME%&dob=%BIRTH_DATE%&download=1` |
+| **Mailchimp** | `*|FNAME|* *|LNAME|*` | `*|DOB|*` | `https://blueprint.mysticaldigits.com/?name=*|FNAME|*+*|LNAME|*&dob=*|DOB|*&download=1` |
+| **ConvertKit** | `{{ subscriber.first_name }}` | `{{ subscriber.cf_birth_date }}` | `https://blueprint.mysticaldigits.com/?name={{ subscriber.first_name }}&dob={{ subscriber.cf_birth_date }}&download=1` |
+| **Klaviyo** | `{{ person.first_name }}` | `{{ person.birth_date }}` | `https://blueprint.mysticaldigits.com/?name={{ person.first_name }}&dob={{ person.birth_date }}&download=1` |
+| **Resend** | `{{ name }}` | `{{ dob }}` | `https://blueprint.mysticaldigits.com/?name={{ name }}&dob={{ dob }}&download=1` |
 
 ---
 
@@ -66,13 +85,13 @@ Use this format for your CTA buttons:
   <!-- CTA ACTIONS -->
   <div style="text-align: center; margin: 35px 0; padding: 20px; border: 1px dashed #DDB146; border-radius: 8px; background-color: rgba(221, 177, 70, 0.03);">
     <p style="margin-top: 0; font-weight: bold; font-family: 'Helvetica Neue', sans-serif; font-size: 14px;">Option A: Download PDF Workbook</p>
-    <a href="https://life-path.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}&download=1" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 4px; display: inline-block; box-shadow: 0 4px 12px rgba(221, 177, 70, 0.3);">
+    <a href="https://blueprint.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}&download=1" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 4px; display: inline-block; box-shadow: 0 4px 12px rgba(221, 177, 70, 0.3);">
       Open Reading + Auto-Download PDF ↗
     </a>
     <div style="margin-top: 8px; font-size: 11px; color: #9D9380; font-family: sans-serif;">(Points directly to your profile and triggers PDF download in browser)</div>
 
     <p style="margin-top: 25px; margin-bottom: 5px; font-weight: bold; font-family: 'Helvetica Neue', sans-serif; font-size: 14px;">Option B: Explore Interactive Map Online</p>
-    <a href="https://life-path.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}" style="color: #DDB146; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: underline; display: inline-block;">
+    <a href="https://blueprint.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}" style="color: #DDB146; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: underline; display: inline-block;">
       Open Your Interactive Reading ↗
     </a>
   </div>
@@ -114,12 +133,12 @@ Use this format for your CTA buttons:
   <!-- CTA ACTIONS -->
   <div style="text-align: center; margin: 35px 0; padding: 20px; border: 1px dashed #DDB146; border-radius: 8px; background-color: rgba(221, 177, 70, 0.03);">
     <p style="margin-top: 0; font-weight: bold; font-family: 'Helvetica Neue', sans-serif; font-size: 14px;">Option A: Download PDF Workbook</p>
-    <a href="https://life-path.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}&download=1" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.15em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 4px; display: inline-block;">
+    <a href="https://blueprint.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}&download=1" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.15em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 4px; display: inline-block;">
       Open Reading + Auto-Download PDF ↗
     </a>
 
     <p style="margin-top: 25px; margin-bottom: 5px; font-weight: bold; font-family: 'Helvetica Neue', sans-serif; font-size: 14px;">Option B: Explore Interactive Map Online</p>
-    <a href="https://life-path.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}" style="color: #DDB146; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: underline; display: inline-block;">
+    <a href="https://blueprint.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}" style="color: #DDB146; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: underline; display: inline-block;">
       Open Your Interactive Reading ↗
     </a>
   </div>
@@ -164,12 +183,12 @@ Use this format for your CTA buttons:
   <!-- CTA ACTIONS -->
   <div style="text-align: center; margin: 35px 0; padding: 20px; border: 1px dashed #DDB146; border-radius: 8px; background-color: rgba(221, 177, 70, 0.03);">
     <p style="margin-top: 0; font-weight: bold; font-family: 'Helvetica Neue', sans-serif; font-size: 14px;">Option A: Download PDF Workbook</p>
-    <a href="https://life-path.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}&download=1" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.15em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 4px; display: inline-block;">
+    <a href="https://blueprint.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}&download=1" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.15em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 4px; display: inline-block;">
       Open Reading + Auto-Download PDF ↗
     </a>
 
     <p style="margin-top: 25px; margin-bottom: 5px; font-weight: bold; font-family: 'Helvetica Neue', sans-serif; font-size: 14px;">Option B: Explore Interactive Map Online</p>
-    <a href="https://life-path.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}" style="color: #DDB146; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: underline; display: inline-block;">
+    <a href="https://blueprint.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}" style="color: #DDB146; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: underline; display: inline-block;">
       Open Your Interactive Reading ↗
     </a>
   </div>
@@ -219,12 +238,12 @@ Use this format for your CTA buttons:
   <!-- CTA ACTIONS -->
   <div style="text-align: center; margin: 35px 0; padding: 20px; border: 1px dashed #DDB146; border-radius: 8px; background-color: rgba(221, 177, 70, 0.03);">
     <p style="margin-top: 0; font-weight: bold; font-family: 'Helvetica Neue', sans-serif; font-size: 14px;">Option A: Download PDF Workbook</p>
-    <a href="https://life-path.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}&download=1" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.15em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 4px; display: inline-block;">
+    <a href="https://blueprint.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}&download=1" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.15em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 4px; display: inline-block;">
       Open Reading + Auto-Download PDF ↗
     </a>
 
     <p style="margin-top: 25px; margin-bottom: 5px; font-weight: bold; font-family: 'Helvetica Neue', sans-serif; font-size: 14px;">Option B: Explore Interactive Map Online</p>
-    <a href="https://life-path.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}" style="color: #DDB146; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: underline; display: inline-block;">
+    <a href="https://blueprint.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}" style="color: #DDB146; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: underline; display: inline-block;">
       Open Your Interactive Reading ↗
     </a>
   </div>
@@ -268,23 +287,27 @@ Use this format for your CTA buttons:
 
   <p>This is a custom-generated PDF workbook built exclusively for you. It is a highly practical, interactive journal designed for deep reflection and daily action.</p>
 
-  <h3 style="font-family: 'Helvetica Neue', sans-serif; border-bottom: 1px solid #DDB146; padding-bottom: 8px;">✦ What’s Inside Your Premium OS Workbook:</h3>
+  <h3 style="font-family: 'Helvetica Neue', sans-serif; border-bottom: 1px solid #DDB146; padding-bottom: 8px;">✦ What's Inside Your 61-Page Premium Edition:</h3>
   <ul>
-    <li><strong>Advanced Shadow-to-Strategy Maps:</strong> How to convert your numbers' typical friction points into practical behaviors.</li>
-    <li><strong>Wealth & Legacy Settings:</strong> Leveraging your Expression for career authority.</li>
-    <li><strong>Interactive 12-Month Calendar:</strong> Specific timing rules, rituals, and monthly tracking pages.</li>
-    <li><strong>Printable Reflection Journals:</strong> High-value prompts to clarify your goals and boundaries.</li>
+    <li><strong>Deep Shadow Pattern Analysis:</strong> The trigger, the coping move, the cost, and the mature response — for every number in your chart.</li>
+    <li><strong>Relationship Compatibility Map:</strong> Your signature read against all twelve Life Paths, plus green lights and red flags you can actually use.</li>
+    <li><strong>Career &amp; Purpose Alignment:</strong> Environments, roles and industries for your Expression, with a seven-line fit grid for any opportunity.</li>
+    <li><strong>Wealth &amp; Legacy Settings:</strong> Your money archetype, where it leaks, the one rule that fixes it, and a legacy builder worksheet.</li>
+    <li><strong>The Full Life Phase Map:</strong> All four Pinnacles and all four Challenges, each with its own page and age range.</li>
+    <li><strong>Personalised Codes &amp; Growth Prompts:</strong> Colours, crystal, element and favourable days, plus 35 uncomfortable questions across seven domains.</li>
+    <li><strong>Month-By-Month Forecast &amp; Operating System:</strong> Your Personal Year in depth, four months per page, and a 90-day execution board.</li>
+    <li><strong>Printable Journals:</strong> Weekly review spreads, a monthly tracker, and a year-at-a-glance page.</li>
   </ul>
 
   <!-- CTA ACTIONS -->
   <div style="text-align: center; margin: 35px 0; padding: 20px; border: 1px dashed #DDB146; border-radius: 8px; background-color: rgba(221, 177, 70, 0.03);">
     <p style="margin-top: 0; font-weight: bold; font-family: 'Helvetica Neue', sans-serif; font-size: 14px;">Option A: Download PDF Workbook</p>
-    <a href="https://life-path.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}&download=1" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.15em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 4px; display: inline-block; box-shadow: 0 4px 15px rgba(221, 177, 70, 0.4);">
+    <a href="https://blueprint.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}&download=1" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.15em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 4px; display: inline-block; box-shadow: 0 4px 15px rgba(221, 177, 70, 0.4);">
       Open Reading + Auto-Download PDF ↗
     </a>
 
     <p style="margin-top: 25px; margin-bottom: 5px; font-weight: bold; font-family: 'Helvetica Neue', sans-serif; font-size: 14px;">Option B: Explore Interactive Map Online</p>
-    <a href="https://life-path.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}" style="color: #DDB146; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: underline; display: inline-block;">
+    <a href="https://blueprint.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}" style="color: #DDB146; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: underline; display: inline-block;">
       Open Your Interactive Reading ↗
     </a>
   </div>

@@ -11,9 +11,11 @@ import CoreInsights from "@/components/CoreInsights";
 import EnergyProfile from "@/components/EnergyProfile";
 import FreePdfButton from "@/components/FreePdfButton";
 import PremiumPaywall from "@/components/PremiumPaywall";
+import PremiumPdfButton from "@/components/PremiumPdfButton";
 import FloatingParticles from "@/components/FloatingParticles";
 import { calculateFullProfile, type NumerologyProfile } from "@/lib/numerology";
-import { getInterpretation, birthdayInterpretations } from "@/lib/interpretations";
+import { getInterpretationSafe, birthdayInterpretations } from "@/lib/interpretations";
+import { saveProfile, isPremiumUnlocked } from "@/lib/entitlement";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -37,6 +39,15 @@ const Index = () => {
   const [urlError, setUrlError] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [autoDownload, setAutoDownload] = useState(false);
+  // read once on mount — if this visitor already bought the Premium Edition,
+  // the results page should offer the download rather than the paywall again
+  const [premiumUnlocked, setPremiumUnlocked] = useState(() => isPremiumUnlocked());
+
+  // re-check when the results screen appears, in case checkout completed in
+  // another tab while this one stayed open
+  useEffect(() => {
+    if (phase === "results") setPremiumUnlocked(isPremiumUnlocked());
+  }, [phase]);
 
   // Auto-advance past email gate if user becomes authenticated
   useEffect(() => {
@@ -115,6 +126,11 @@ const Index = () => {
   const startCalculation = (name: string, dob: Date) => {
     setPhase("calculating");
     setLoadingStep(0);
+
+    // Remember the identity behind this reading. If the visitor later buys the
+    // Premium Edition, /payment-success rebuilds the profile from this rather
+    // than asking them to type everything again.
+    saveProfile(name, dob);
 
     const stepInterval = setInterval(() => {
       setLoadingStep((s) => {
@@ -262,11 +278,11 @@ const Index = () => {
 
   // ── Results ──
   if (phase === "results" && profile) {
-    const lp = getInterpretation("lifePath", profile.lifePath)!;
-    const ex = getInterpretation("expression", profile.expression)!;
-    const su = getInterpretation("soulUrge", profile.soulUrge)!;
-    const pe = getInterpretation("personality", profile.personality)!;
-    const py = getInterpretation("personalYear", profile.personalYear)!;
+    const lp = getInterpretationSafe("lifePath", profile.lifePath);
+    const ex = getInterpretationSafe("expression", profile.expression);
+    const su = getInterpretationSafe("soulUrge", profile.soulUrge);
+    const pe = getInterpretationSafe("personality", profile.personality);
+    const py = getInterpretationSafe("personalYear", profile.personalYear);
     const bdText = birthdayInterpretations[profile.birthday] || birthdayInterpretations[1];
     const bd = { title: `Day ${profile.birthday}`, keywords: ["Birthday Energy", "Natural Gift", "Special Talent"], shortDesc: bdText.split('.')[0] + '.', fullText: bdText };
 
@@ -353,8 +369,15 @@ const Index = () => {
             <FreePdfButton profile={profile} name={userName} autoDownload={autoDownload} />
           </div>
 
-          {/* ── PREMIUM UPSELL ── */}
-          <PremiumPaywall />
+          {/* ── PREMIUM ──
+              Returning buyers get the download itself, not the paywall again.
+              isPremiumUnlocked() is read on mount so that landing back here
+              after checkout shows the artifact instead of a second upsell. */}
+          {premiumUnlocked ? (
+            <PremiumPdfButton profile={profile} name={userName} />
+          ) : (
+            <PremiumPaywall />
+          )}
 
           {/* Footer */}
           <footer className="text-center mt-14 pt-6 border-t border-border/20">

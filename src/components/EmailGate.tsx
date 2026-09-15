@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mail, Sparkles, CheckCircle, ArrowRight, ShieldCheck } from "lucide-react";
 import { submitLifePathLead } from "@/lib/lifePathLead";
+import { FREE_PAGE_COUNT } from "@/lib/editions";
 
 interface EmailGateProps {
   userName: string;
@@ -31,18 +32,22 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
     setEmailSentSuccessfully(true);
     setEmailErrorMessage("");
 
+    let delivered = true;
+
     try {
       const res = await submitLifePathLead({
         email: email.trim(),
         fullName: userName,
         birthDate: birthDate ? birthDate.toISOString().split("T")[0] : undefined,
       });
+      delivered = res.ok;
       if (!res.ok) {
         setEmailSentSuccessfully(false);
         setEmailErrorMessage(res.message || "Failed to send email");
       }
     } catch (leadError: any) {
       console.error("Life-path lead capture failed", leadError);
+      delivered = false;
       setEmailSentSuccessfully(false);
       setEmailErrorMessage(leadError instanceof Error ? leadError.message : String(leadError));
     }
@@ -52,7 +57,9 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
 
     // Let user proceed immediately while the welcome email lands in their inbox.
     // Give them a bit more time if it failed to let them read the warning status.
-    const delay = emailSentSuccessfully ? 900 : 2500;
+    // NOTE: `emailSentSuccessfully` is state, so it is still the pre-update value
+    // in this closure — use the local `delivered` flag instead.
+    const delay = delivered ? 900 : 2500;
     setTimeout(() => onComplete(email.trim()), delay);
   };
 
@@ -84,7 +91,7 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
                 transition={{ delay: 0.3 }}
                 className="font-display text-2xl md:text-3xl text-gradient-gold mb-3"
               >
-                {firstName}, your premium blueprint is ready
+                {firstName}, your blueprint is ready
               </motion.h2>
 
               <motion.p
@@ -93,7 +100,7 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
                 transition={{ delay: 0.4 }}
                 className="font-body text-lg text-muted-foreground mb-2 leading-relaxed"
               >
-                Enter your email to unlock the full reading and your premium PDF workbook — a gorgeous, practical guide with decision filters, timing prompts, a 30-day activation plan, and printable reflection pages.
+                Enter your email to unlock the full reading and your {FREE_PAGE_COUNT}-page PDF workbook — built from your own six numbers, with the decision filter, timing prompts, a 30-day activation plan, and printable reflection pages.
               </motion.p>
 
               <motion.p
@@ -148,7 +155,7 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
 
                 <div className="mt-4 grid grid-cols-3 gap-2 text-[10px] font-ui tracking-wide text-muted-foreground/60">
                   <span className="inline-flex items-center justify-center gap-1 rounded-full border border-border/50 bg-card/40 px-2 py-1"><ShieldCheck className="h-3 w-3 text-primary" />Private</span>
-                  <span className="rounded-full border border-border/50 bg-card/40 px-2 py-1">Premium PDF</span>
+                  <span className="rounded-full border border-border/50 bg-card/40 px-2 py-1">{FREE_PAGE_COUNT}-page PDF</span>
                   <span className="rounded-full border border-border/50 bg-card/40 px-2 py-1">1-click opt out</span>
                 </div>
 
