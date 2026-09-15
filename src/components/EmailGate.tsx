@@ -194,11 +194,23 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
               </h2>
               {emailSentSuccessfully ? (
                 <p className="font-body text-lg text-muted-foreground mb-2">
-                  We emailed <span className="text-foreground">{email}</span> your premium usage guide.
+                  We emailed <span className="text-foreground">{email}</span> your free usage guide.
                 </p>
               ) : (
                 <p className="font-body text-lg text-amber-500/90 mb-2">
                   Warning: We couldn't send your email guide ({emailErrorMessage}).
+                </p>
+              )}
+
+              {/* Sender authentication for mysticaldigits.com is incomplete, so
+                  the guide often lands in spam. Telling the buyer to look there
+                  — and to mark it "not spam" — both prevents a support ticket
+                  and teaches the filter, which improves delivery over time. */}
+              {emailSentSuccessfully && (
+                <p className="font-ui text-xs text-muted-foreground/70 mb-2 leading-relaxed">
+                  Not in your inbox within a few minutes? Check your <span className="text-foreground">spam</span> or
+                  promotions folder and mark it <span className="text-foreground">"not spam"</span> so the next one
+                  reaches you.
                 </p>
               )}
               <p className="font-body text-base text-muted-foreground/60">

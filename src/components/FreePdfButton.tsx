@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Download, FileText, Loader2, CheckCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,12 @@ const FreePdfButton = ({ profile, name, autoDownload }: FreePdfButtonProps) => {
   const [generating, setGenerating] = useState(false);
   const [done, setDone] = useState(false);
   const { toast } = useToast();
-  const [downloadedOnce, setDownloadedOnce] = useState(false);
+  // A ref, not state. State updates are asynchronous, so a guard built from
+  // state can still be `false` when the effect runs a second time — React 18
+  // double-invokes effects under StrictMode in development, and any re-render
+  // landing before the state commits has the same effect. The visitor would
+  // then get two downloads. PremiumPdfButton already guards this way.
+  const startedRef = useRef(false);
 
   const generatePdf = async () => {
     setGenerating(true);
@@ -48,12 +53,12 @@ const FreePdfButton = ({ profile, name, autoDownload }: FreePdfButtonProps) => {
   };
 
   useEffect(() => {
-    if (autoDownload && !downloadedOnce && !generating) {
-      setDownloadedOnce(true);
+    if (autoDownload && !startedRef.current) {
+      startedRef.current = true;
       generatePdf();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoDownload, downloadedOnce, generating]);
+  }, [autoDownload]);
 
   return (
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="rounded-3xl border border-primary/25 bg-card/70 p-5 shadow-gold/20 mb-8 text-center">

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import React from "react";
 import FreePdfButton from "../components/FreePdfButton";
@@ -104,21 +104,32 @@ const mockProfile: NumerologyProfile = {
 };
 
 describe("MysticalDigits App Tests", () => {
-  it("renders FreePdfButton and handles download without throwing", async () => {
+  // The generator is loaded with a dynamic import, so its completion is not
+  // bounded by any fixed delay. Asserting after a 500ms sleep used to fail
+  // intermittently and then leak the late `save()` into the *next* test — which
+  // is why "exactly once" occasionally read as twice. Wait for the real
+  // condition instead, and clear the shared spy before each test.
+  beforeEach(() => {
     mockSave.mockClear();
+  });
+
+  it("renders FreePdfButton and handles download without throwing", async () => {
     render(<FreePdfButton profile={mockProfile} name="Test User" />);
     const btn = screen.getByText(/Download Free Blueprint PDF/i);
     expect(btn).toBeInTheDocument();
 
     fireEvent.click(btn);
-    await new Promise((r) => setTimeout(r, 500));
-    expect(mockSave).toHaveBeenCalled();
+    await vi.waitFor(() => expect(mockSave).toHaveBeenCalled(), { timeout: 15_000 });
   });
 
   it("triggers auto-download once when autoDownload prop is set", async () => {
-    mockSave.mockClear();
     render(<FreePdfButton profile={mockProfile} name="Test User" autoDownload={true} />);
-    await new Promise((r) => setTimeout(r, 500));
+
+    await vi.waitFor(() => expect(mockSave).toHaveBeenCalledTimes(1), { timeout: 15_000 });
+
+    // Give a second, unwanted trigger room to appear, so "exactly once" is a
+    // real assertion rather than a race that happens to be won.
+    await new Promise((r) => setTimeout(r, 800));
     expect(mockSave).toHaveBeenCalledTimes(1);
   });
 
