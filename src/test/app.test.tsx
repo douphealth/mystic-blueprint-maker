@@ -156,7 +156,7 @@ describe("MysticalDigits App Tests", () => {
     });
   });
 
-  it("fails to bypass and shows error for invalid date format", async () => {
+  it("recovers into the intake form when a link carries an unparseable date", async () => {
     const originalSearch = window.location.search;
     Object.defineProperty(window, "location", {
       writable: true,
@@ -167,9 +167,21 @@ describe("MysticalDigits App Tests", () => {
     });
 
     render(<Index />);
-    const errorTitle = await screen.findByText("Invalid Link");
-    expect(errorTitle).toBeInTheDocument();
-    expect(screen.getByText(/Invalid birth date format/i)).toBeInTheDocument();
+
+    // A subscriber arriving from a personalised email must never hit a dead
+    // end. The old behaviour was an "Invalid Link" wall; now the name that did
+    // survive is kept and only the missing piece is asked for.
+    expect(await screen.findByText(/couldn't read a birth date/i)).toBeInTheDocument();
+    expect(screen.queryByText("Invalid Link")).not.toBeInTheDocument();
+
+    // The intake is on the date step, because the name is already known.
+    // findByText, not getByText: AnimatePresence mode="wait" holds the incoming
+    // step back until the outgoing one has finished animating out.
+    expect(await screen.findByText(/Reveal My Blueprint/i)).toBeInTheDocument();
+
+    // And the name we could read is still there, one step back.
+    fireEvent.click(await screen.findByText(/Go back/i));
+    expect(await screen.findByDisplayValue("Jane Doe")).toBeInTheDocument();
 
     Object.defineProperty(window, "location", {
       writable: true,
@@ -180,12 +192,51 @@ describe("MysticalDigits App Tests", () => {
     });
   });
 
-  it("contains required CTA variables in email_sequence.md", () => {
+  it("uses Brevo merge tags consistently in email_sequence.md", () => {
     const filePath = path.resolve(__dirname, "../../docs/emails/email_sequence.md");
     const content = fs.readFileSync(filePath, "utf8");
 
-    expect(content).toContain("{{pdf_url}}");
-    expect(content).toContain("{{full_name}}");
-    expect(content).toContain("{{birth_date}}");
+    // Everything above the appendix is a live template that gets pasted into
+    // Brevo. Foreign syntax is fine *inside* the appendix — it is reference
+    // material — but a stray tag above it would be mailed out as literal text.
+    const [liveTemplates] = content.split("## Appendix: merge tags for other ESPs");
+    expect(liveTemplates.length).toBeGreaterThan(0);
+
+    expect(liveTemplates).toContain("{{ contact.FIRSTNAME }}");
+    expect(liveTemplates).toContain("{{ contact.LASTNAME }}");
+    expect(liveTemplates).toContain("{{ contact.DOB_ISO }}");
+
+    for (const foreign of [
+      "{{first_name}}",
+      "{{full_name}}",
+      "{{birth_date}}",
+      "{{pdf_url}}",
+      "YOUR_NAME_TAG",
+      "YOUR_DOB_TAG",
+      "%FIRSTNAME%",
+      "*|FNAME|*",
+      "{{contact.name}}",
+    ]) {
+      expect(liveTemplates).not.toContain(foreign);
+    }
+
+    // Every CTA must carry both required parameters, and none may point at the
+    // old host that stripped the query string.
+    const ctaLines = liveTemplates
+      .split("\n")
+      .filter((line) => line.includes("blueprint.mysticaldigits.com/?"));
+    expect(ctaLines.length).toBeGreaterThanOrEqual(10);
+    for (const line of ctaLines) {
+      expect(line).toContain("name={{ contact.FIRSTNAME }}+{{ contact.LASTNAME }}");
+      expect(line).toContain("dob={{ contact.DOB_ISO }}");
+    }
+
+    // No *link* may point at the old host. It is still named once in the prose
+    // above, documenting the fix — that mention is the point, so only lines
+    // that actually carry a URL are checked.
+    for (const line of liveTemplates.split("\n")) {
+      if (!line.includes("https://")) continue;
+      expect(line).not.toContain("life-path.mysticaldigits.com");
+    }
   });
 });

@@ -1,22 +1,52 @@
 # MysticalDigits: High-Converting & Personalized Onboarding Email Sequence
 
-> ## ⚠️ Two fixes required before this sequence will work
+> ## ⚠️ Read this before you paste anything into Brevo
 >
-> **1. The CTA domain was wrong.** Every button previously pointed at
-> `life-path.mysticaldigits.com`. That host 301-redirects to
-> `mysticaldigits.com/life-path-number-calculator/` and **strips the entire
-> query string**, so `?name=…&dob=…&download=1` never reached the app. The
-> personalisation and the auto-download both silently failed. All links below
-> now point at `blueprint.mysticaldigits.com`, which serves the app.
+> **This account sends through Brevo.** Every tag below uses Brevo's syntax:
+> `{{ contact.ATTRIBUTE }}`, with the attribute name exactly as it appears on
+> Brevo's Contact attributes page. Do not paste a tag from any other ESP's
+> documentation into these templates — Brevo will not substitute it, and the
+> recipient sees the raw braces.
 >
-> **2. The sender domain is not branded.** Emails currently send from
-> `digitsmystical@11048820.brevosend.com` — Brevo's *shared* domain, which
-> lands in spam. Verify `mysticaldigits.com` in Brevo and send from an address
-> on that domain instead.
+> **One value you must confirm before sending: `DOB_ISO`.**
+> The birth date has to arrive as strict `YYYY-MM-DD` or the app cannot build
+> the reading. Two ways to get there — pick one:
 >
-> **3. `dob` must be ISO `YYYY-MM-DD`.** The app rejects any other format with
-> an "Invalid Link" screen. Check what your ESP actually emits for the birth
-> date field before launching — several produce `DD/MM/YYYY` by default.
+> - **Preferred: a text attribute.** Create a contact attribute named
+>   `DOB_ISO` of type **Text** (Settings → Contacts → Contact attributes) and
+>   store the date already formatted, e.g. `1990-05-15`. Deterministic, and no
+>   filter has to be trusted.
+> - **If the date already lives in a date-type attribute** (the intake sends
+>   `birthDate`, so check for `BIRTHDATE`), either rename it to `DOB_ISO`, or
+>   find-and-replace `DOB_ISO` below with the real name and add a date filter:
+>   `{{ contact.BIRTHDATE|date:"2006-01-02" }}`. That layout string is Go's
+>   reference-time format, not `strftime` — verify it in Brevo's preview before
+>   sending, because a date attribute rendered through an account-locale
+>   default will come out `DD/MM/YYYY` and silently break the link.
+>
+> **What is already fixed, so you do not redo it:**
+>
+> - **The CTA domain.** Every button previously pointed at
+>   `life-path.mysticaldigits.com`, which 301-redirects to
+>   `mysticaldigits.com/life-path-number-calculator/` and **strips the entire
+>   query string** — so `?name=…&dob=…&download=1` never reached the app and
+>   both the personalisation and the auto-download failed silently. All links
+>   below point at `blueprint.mysticaldigits.com`, which serves the app.
+> - **DKIM.** `brevo1` and `brevo2._domainkey.mysticaldigits.com` now resolve
+>   through to real RSA keys, confirmed on two independent resolvers. Domain
+>   authentication is in place.
+>
+> **The one thing still outstanding on delivery:** the sender is
+> `digitsmystical@11048820.brevosend.com` — Brevo's *shared* domain. Brevo
+> signs with the DKIM key of the **sending** domain, so the
+> `mysticaldigits.com` key above is not being used yet. Move the From address
+> onto your own domain and the DKIM work starts counting.
+>
+> **Two URL-safety notes.** Brevo substitutes attribute values raw, so a name
+> containing `&`, `#` or `%` will corrupt the query string — rare, but worth
+> knowing. And if a tag fails to substitute, the visitor no longer hits a dead
+> end: the app now falls back to the intake form with the name pre-filled
+> rather than showing an "Invalid Link" wall.
 
 
 This email sequence uses dynamic query parameters to send returning users directly to their calculated results and premium PDF workbook, bypassing the intake quiz entirely.
@@ -24,32 +54,53 @@ This email sequence uses dynamic query parameters to send returning users direct
 ---
 
 ## ⚡ CRITICAL: How to Set Up the Direct Bypass Links
-To prevent subscribers from having to take the quiz again, you must construct the CTA links using your Email Service Provider's (ESP) dynamic merge tags.
+To prevent subscribers from having to take the quiz again, the CTA links carry
+the subscriber's name and birth date as query parameters. The app reads them on
+load and skips straight to the finished reading.
 
-Use this format for your CTA buttons:
+Use exactly these two forms:
 
-1. **Primary CTA (Open Reading & Auto-Download PDF):**
-   `https://blueprint.mysticaldigits.com/?name=YOUR_NAME_TAG&dob=YOUR_DOB_TAG&download=1` (or `{{pdf_url}}` if pre-mapped to this URL)
+1. **Primary CTA (open the reading and auto-download the PDF):**
 
-2. **Secondary CTA (Open Interactive Reading only):**
-   `https://blueprint.mysticaldigits.com/?name=YOUR_NAME_TAG&dob=YOUR_DOB_TAG`
+   ```
+   https://blueprint.mysticaldigits.com/?name={{ contact.FIRSTNAME }}+{{ contact.LASTNAME }}&dob={{ contact.DOB_ISO }}&download=1
+   ```
 
-### 📋 Platform-Specific Merge Tag Reference Table
+2. **Secondary CTA (open the interactive reading only):**
 
-| ESP Platform | Name Merge Tag | Date of Birth (YYYY-MM-DD) Merge Tag | Example Primary CTA Link |
-| :--- | :--- | :--- | :--- |
-| **Loops.so** | `{{contact.name}}` | `{{contact.dob}}` | `https://blueprint.mysticaldigits.com/?name={{contact.name}}&dob={{contact.dob}}&download=1` |
-| **ActiveCampaign** | `%FIRSTNAME% %LASTNAME%` | `%BIRTH_DATE%` | `https://blueprint.mysticaldigits.com/?name=%FIRSTNAME%+%LASTNAME%&dob=%BIRTH_DATE%&download=1` |
-| **Mailchimp** | `*|FNAME|* *|LNAME|*` | `*|DOB|*` | `https://blueprint.mysticaldigits.com/?name=*|FNAME|*+*|LNAME|*&dob=*|DOB|*&download=1` |
-| **ConvertKit** | `{{ subscriber.first_name }}` | `{{ subscriber.cf_birth_date }}` | `https://blueprint.mysticaldigits.com/?name={{ subscriber.first_name }}&dob={{ subscriber.cf_birth_date }}&download=1` |
-| **Klaviyo** | `{{ person.first_name }}` | `{{ person.birth_date }}` | `https://blueprint.mysticaldigits.com/?name={{ person.first_name }}&dob={{ person.birth_date }}&download=1` |
-| **Resend** | `{{ name }}` | `{{ dob }}` | `https://blueprint.mysticaldigits.com/?name={{ name }}&dob={{ dob }}&download=1` |
+   ```
+   https://blueprint.mysticaldigits.com/?name={{ contact.FIRSTNAME }}+{{ contact.LASTNAME }}&dob={{ contact.DOB_ISO }}
+   ```
+
+Three details that are easy to get wrong:
+
+- **The `+` is not decoration.** A URL cannot contain a literal space, and the
+  app decodes `+` as one. Use `+`, not a space, between first and last name.
+- **`download=1` is what triggers the auto-download.** Without it the visitor
+  lands on the reading and has to click. With it, the PDF starts on its own.
+- **The attribute names are case-sensitive and must match your Brevo account
+  exactly.** `{{ contact.FIRSTNAME }}` and `{{ contact.LASTNAME }}` are Brevo
+  defaults and will already exist. `DOB_ISO` is the one you create.
+
+### What the app accepts
+
+| Parameter | Accepted aliases | Required format |
+| :--- | :--- | :--- |
+| `name` | `full_name`, `fullname` | Free text. `+` is read as a space. |
+| `dob` | `birth_date`, `birthDate` | **Strict `YYYY-MM-DD`.** Nothing else parses. |
+| `email` | — | Optional. Pre-fills the email gate. |
+| `download` | — | `1` triggers the auto-download. |
+
+If `dob` is present but unparseable, or only one of the two is present, the app
+now drops the visitor into the intake form with the name pre-filled and a short
+explanation — it does **not** show the old "Invalid Link" wall. A misconfigured
+tag costs the subscriber a few seconds instead of the whole reading.
 
 ---
 
 ## 📧 Email 1: Welcome & Instant Results Bypass (Day 1)
 **Trigger**: Immediately after intake submission.
-**Subject**: {{first_name}}, your personalized MysticalDigits PDF is ready
+**Subject**: {{ contact.FIRSTNAME }}, your personalized MysticalDigits PDF is ready
 **Preheader**: Confirming your blueprint is ready. Open to auto-download your workbook and view your interactive map.
 
 ```html
@@ -61,7 +112,7 @@ Use this format for your CTA buttons:
 <!-- EMAIL BODY -->
 <div style="font-family: 'Georgia', Times, serif; font-size: 16px; line-height: 1.8; color: #12101C; max-width: 600px; margin: 0 auto; padding: 30px 20px; background-color: #FCF6E9;">
   
-  <p>Hello {{first_name}},</p>
+  <p>Hello {{ contact.FIRSTNAME }},</p>
   
   <p>Your personalized MysticalDigits PDF is ready. We have calculated and compiled your complete numerology profile based on your name vibration and birth date.</p>
 
@@ -85,13 +136,13 @@ Use this format for your CTA buttons:
   <!-- CTA ACTIONS -->
   <div style="text-align: center; margin: 35px 0; padding: 20px; border: 1px dashed #DDB146; border-radius: 8px; background-color: rgba(221, 177, 70, 0.03);">
     <p style="margin-top: 0; font-weight: bold; font-family: 'Helvetica Neue', sans-serif; font-size: 14px;">Option A: Download PDF Workbook</p>
-    <a href="https://blueprint.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}&download=1" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 4px; display: inline-block; box-shadow: 0 4px 12px rgba(221, 177, 70, 0.3);">
+    <a href="https://blueprint.mysticaldigits.com/?name={{ contact.FIRSTNAME }}+{{ contact.LASTNAME }}&dob={{ contact.DOB_ISO }}&download=1" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 4px; display: inline-block; box-shadow: 0 4px 12px rgba(221, 177, 70, 0.3);">
       Open Reading + Auto-Download PDF ↗
     </a>
     <div style="margin-top: 8px; font-size: 11px; color: #9D9380; font-family: sans-serif;">(Points directly to your profile and triggers PDF download in browser)</div>
 
     <p style="margin-top: 25px; margin-bottom: 5px; font-weight: bold; font-family: 'Helvetica Neue', sans-serif; font-size: 14px;">Option B: Explore Interactive Map Online</p>
-    <a href="https://blueprint.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}" style="color: #DDB146; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: underline; display: inline-block;">
+    <a href="https://blueprint.mysticaldigits.com/?name={{ contact.FIRSTNAME }}+{{ contact.LASTNAME }}&dob={{ contact.DOB_ISO }}" style="color: #DDB146; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: underline; display: inline-block;">
       Open Your Interactive Reading ↗
     </a>
   </div>
@@ -113,7 +164,7 @@ Use this format for your CTA buttons:
 
 ## 📧 Email 2: The Soul Urge & Private Values (Day 2)
 **Trigger**: 24 hours after Email 1.
-**Subject**: {{first_name}}, are you feeding your Soul Urge?
+**Subject**: {{ contact.FIRSTNAME }}, are you feeding your Soul Urge?
 **Preheader**: The silent fuel dictating your core satisfaction in work and love.
 
 ```html
@@ -122,7 +173,7 @@ Use this format for your CTA buttons:
 </div>
 
 <div style="font-family: 'Georgia', Times, serif; font-size: 16px; line-height: 1.8; color: #12101C; max-width: 600px; margin: 0 auto; padding: 30px 20px; background-color: #FCF6E9;">
-  <p>Hello {{first_name}},</p>
+  <p>Hello {{ contact.FIRSTNAME }},</p>
 
   <p>Yesterday, we discussed your Life Path. Today, we look deeper at your **Soul Urge** (also known as the Heart's Desire).</p>
 
@@ -133,12 +184,12 @@ Use this format for your CTA buttons:
   <!-- CTA ACTIONS -->
   <div style="text-align: center; margin: 35px 0; padding: 20px; border: 1px dashed #DDB146; border-radius: 8px; background-color: rgba(221, 177, 70, 0.03);">
     <p style="margin-top: 0; font-weight: bold; font-family: 'Helvetica Neue', sans-serif; font-size: 14px;">Option A: Download PDF Workbook</p>
-    <a href="https://blueprint.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}&download=1" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.15em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 4px; display: inline-block;">
+    <a href="https://blueprint.mysticaldigits.com/?name={{ contact.FIRSTNAME }}+{{ contact.LASTNAME }}&dob={{ contact.DOB_ISO }}&download=1" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.15em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 4px; display: inline-block;">
       Open Reading + Auto-Download PDF ↗
     </a>
 
     <p style="margin-top: 25px; margin-bottom: 5px; font-weight: bold; font-family: 'Helvetica Neue', sans-serif; font-size: 14px;">Option B: Explore Interactive Map Online</p>
-    <a href="https://blueprint.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}" style="color: #DDB146; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: underline; display: inline-block;">
+    <a href="https://blueprint.mysticaldigits.com/?name={{ contact.FIRSTNAME }}+{{ contact.LASTNAME }}&dob={{ contact.DOB_ISO }}" style="color: #DDB146; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: underline; display: inline-block;">
       Open Your Interactive Reading ↗
     </a>
   </div>
@@ -163,7 +214,7 @@ Use this format for your CTA buttons:
 
 ## 📧 Email 3: Expression & Career Vectors (Day 3)
 **Trigger**: 24 hours after Email 2.
-**Subject**: {{first_name}}, are you using your natural talent vector?
+**Subject**: {{ contact.FIRSTNAME }}, are you using your natural talent vector?
 **Preheader**: The naming blueprint that defines your career success and legacy.
 
 ```html
@@ -172,7 +223,7 @@ Use this format for your CTA buttons:
 </div>
 
 <div style="font-family: 'Georgia', Times, serif; font-size: 16px; line-height: 1.8; color: #12101C; max-width: 600px; margin: 0 auto; padding: 30px 20px; background-color: #FCF6E9;">
-  <p>Hello {{first_name}},</p>
+  <p>Hello {{ contact.FIRSTNAME }},</p>
 
   <p>Your Life Path shows the path of your growth. Your Soul Urge shows your fuel. Today, let’s unlock your <strong>Expression (Destiny) Number</strong>.</p>
 
@@ -183,12 +234,12 @@ Use this format for your CTA buttons:
   <!-- CTA ACTIONS -->
   <div style="text-align: center; margin: 35px 0; padding: 20px; border: 1px dashed #DDB146; border-radius: 8px; background-color: rgba(221, 177, 70, 0.03);">
     <p style="margin-top: 0; font-weight: bold; font-family: 'Helvetica Neue', sans-serif; font-size: 14px;">Option A: Download PDF Workbook</p>
-    <a href="https://blueprint.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}&download=1" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.15em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 4px; display: inline-block;">
+    <a href="https://blueprint.mysticaldigits.com/?name={{ contact.FIRSTNAME }}+{{ contact.LASTNAME }}&dob={{ contact.DOB_ISO }}&download=1" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.15em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 4px; display: inline-block;">
       Open Reading + Auto-Download PDF ↗
     </a>
 
     <p style="margin-top: 25px; margin-bottom: 5px; font-weight: bold; font-family: 'Helvetica Neue', sans-serif; font-size: 14px;">Option B: Explore Interactive Map Online</p>
-    <a href="https://blueprint.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}" style="color: #DDB146; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: underline; display: inline-block;">
+    <a href="https://blueprint.mysticaldigits.com/?name={{ contact.FIRSTNAME }}+{{ contact.LASTNAME }}&dob={{ contact.DOB_ISO }}" style="color: #DDB146; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: underline; display: inline-block;">
       Open Your Interactive Reading ↗
     </a>
   </div>
@@ -213,7 +264,7 @@ Use this format for your CTA buttons:
 
 ## 📧 Email 4: Personal Timing & Cycles (Day 4)
 **Trigger**: 24 hours after Email 3.
-**Subject**: Stop fighting the tide, {{first_name}}
+**Subject**: Stop fighting the tide, {{ contact.FIRSTNAME }}
 **Preheader**: Why your Personal Year and Personal Month dictate your success.
 
 ```html
@@ -222,7 +273,7 @@ Use this format for your CTA buttons:
 </div>
 
 <div style="font-family: 'Georgia', Times, serif; font-size: 16px; line-height: 1.8; color: #12101C; max-width: 600px; margin: 0 auto; padding: 30px 20px; background-color: #FCF6E9;">
-  <p>Hi {{first_name}},</p>
+  <p>Hi {{ contact.FIRSTNAME }},</p>
 
   <p>Why do some months feel like walking through wet cement, while other months bring effortless windfalls, partnerships, and breakthroughs?</p>
 
@@ -238,12 +289,12 @@ Use this format for your CTA buttons:
   <!-- CTA ACTIONS -->
   <div style="text-align: center; margin: 35px 0; padding: 20px; border: 1px dashed #DDB146; border-radius: 8px; background-color: rgba(221, 177, 70, 0.03);">
     <p style="margin-top: 0; font-weight: bold; font-family: 'Helvetica Neue', sans-serif; font-size: 14px;">Option A: Download PDF Workbook</p>
-    <a href="https://blueprint.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}&download=1" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.15em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 4px; display: inline-block;">
+    <a href="https://blueprint.mysticaldigits.com/?name={{ contact.FIRSTNAME }}+{{ contact.LASTNAME }}&dob={{ contact.DOB_ISO }}&download=1" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.15em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 4px; display: inline-block;">
       Open Reading + Auto-Download PDF ↗
     </a>
 
     <p style="margin-top: 25px; margin-bottom: 5px; font-weight: bold; font-family: 'Helvetica Neue', sans-serif; font-size: 14px;">Option B: Explore Interactive Map Online</p>
-    <a href="https://blueprint.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}" style="color: #DDB146; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: underline; display: inline-block;">
+    <a href="https://blueprint.mysticaldigits.com/?name={{ contact.FIRSTNAME }}+{{ contact.LASTNAME }}&dob={{ contact.DOB_ISO }}" style="color: #DDB146; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: underline; display: inline-block;">
       Open Your Interactive Reading ↗
     </a>
   </div>
@@ -268,7 +319,7 @@ Use this format for your CTA buttons:
 
 ## 📧 Email 5: The Premium Upgrade (Day 5)
 **Trigger**: 24 hours after Email 4.
-**Subject**: {{first_name}}, meet your Custom Personal Operating System
+**Subject**: {{ contact.FIRSTNAME }}, meet your Custom Personal Operating System
 **Preheader**: The ultimate custom workbook built for your specific frequencies.
 
 ```html
@@ -277,7 +328,7 @@ Use this format for your CTA buttons:
 </div>
 
 <div style="font-family: 'Georgia', Times, serif; font-size: 16px; line-height: 1.8; color: #12101C; max-width: 600px; margin: 0 auto; padding: 30px 20px; background-color: #FCF6E9;">
-  <p>Hello {{first_name}},</p>
+  <p>Hello {{ contact.FIRSTNAME }},</p>
 
   <p>Over the last four days, you have analyzed your core numbers individually.</p>
 
@@ -302,12 +353,12 @@ Use this format for your CTA buttons:
   <!-- CTA ACTIONS -->
   <div style="text-align: center; margin: 35px 0; padding: 20px; border: 1px dashed #DDB146; border-radius: 8px; background-color: rgba(221, 177, 70, 0.03);">
     <p style="margin-top: 0; font-weight: bold; font-family: 'Helvetica Neue', sans-serif; font-size: 14px;">Option A: Download PDF Workbook</p>
-    <a href="https://blueprint.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}&download=1" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.15em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 4px; display: inline-block; box-shadow: 0 4px 15px rgba(221, 177, 70, 0.4);">
+    <a href="https://blueprint.mysticaldigits.com/?name={{ contact.FIRSTNAME }}+{{ contact.LASTNAME }}&dob={{ contact.DOB_ISO }}&download=1" style="background-color: #DDB146; color: #12101C; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; letter-spacing: 0.15em; text-transform: uppercase; padding: 16px 28px; text-decoration: none; border-radius: 4px; display: inline-block; box-shadow: 0 4px 15px rgba(221, 177, 70, 0.4);">
       Open Reading + Auto-Download PDF ↗
     </a>
 
     <p style="margin-top: 25px; margin-bottom: 5px; font-weight: bold; font-family: 'Helvetica Neue', sans-serif; font-size: 14px;">Option B: Explore Interactive Map Online</p>
-    <a href="https://blueprint.mysticaldigits.com/?name={{full_name}}&dob={{birth_date}}" style="color: #DDB146; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: underline; display: inline-block;">
+    <a href="https://blueprint.mysticaldigits.com/?name={{ contact.FIRSTNAME }}+{{ contact.LASTNAME }}&dob={{ contact.DOB_ISO }}" style="color: #DDB146; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: bold; font-size: 14px; text-decoration: underline; display: inline-block;">
       Open Your Interactive Reading ↗
     </a>
   </div>
@@ -322,3 +373,25 @@ Use this format for your CTA buttons:
   </div>
 </div>
 ```
+
+---
+
+## Appendix: merge tags for other ESPs
+
+**Not used by this account.** This account sends through Brevo, and Brevo does
+not substitute any of the syntaxes below — it will mail them out as literal
+text. Kept only as a starting point if the sequence is ever migrated.
+
+| ESP Platform | Name Merge Tag | Date of Birth (YYYY-MM-DD) Merge Tag |
+| :--- | :--- | :--- |
+| **Loops.so** | `{{contact.name}}` | `{{contact.dob}}` |
+| **ActiveCampaign** | `%FIRSTNAME% %LASTNAME%` | `%BIRTH_DATE%` |
+| **Mailchimp** | `*\|FNAME\|* *\|LNAME\|*` | `*\|DOB\|*` |
+| **ConvertKit** | `{{ subscriber.first_name }}` | `{{ subscriber.cf_birth_date }}` |
+| **Klaviyo** | `{{ person.first_name }}` | `{{ person.birth_date }}` |
+| **Resend** | `{{ name }}` | `{{ dob }}` |
+
+Note that every ESP in the table above needs the same three things Brevo needs:
+a name, a birth date in strict `YYYY-MM-DD`, and a `+` (not a space) between the
+first and last name in the URL.
+

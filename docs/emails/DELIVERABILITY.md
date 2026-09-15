@@ -9,6 +9,45 @@ finished, so mailbox providers treat the mail as untrusted and bury or drop it.
 
 ---
 
+## Status update — 2026-09-15, later the same day
+
+**DKIM is now live.** Re-checked against two independent resolvers (Cloudflare
+and Google); both agree:
+
+```
+brevo1._domainkey.mysticaldigits.com  CNAME  b1.mysticaldigits-com.dkim.brevo.com
+                                      CNAME  brevo19.dkim.brevo.com
+                                      TXT    "k=rsa;p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A..."
+brevo2._domainkey.mysticaldigits.com  CNAME  b2.mysticaldigits-com.dkim.brevo.com
+                                      CNAME  brevo20.dkim.brevo.com
+                                      TXT    "k=rsa;p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A..."
+```
+
+A control query for an invented name under the same zone still returns
+`NXDOMAIN`, so these are genuine per-selector records and not a wildcard.
+
+Two corrections to the diagnosis below, both worth recording:
+
+1. **The selectors tested earlier were the wrong ones.** The table below probes
+   `brevo._domainkey` and `mail._domainkey` — neither is a selector Brevo uses
+   for this account, and both still return `NXDOMAIN` today. The live selectors
+   are `brevo1` and `brevo2`. A `NXDOMAIN` on a guessed selector is not evidence
+   that DKIM is missing; it is evidence that the guess was wrong. The correct
+   targets were recoverable from Brevo's per-domain CNAME chain
+   (`b1.mysticaldigits-com.dkim.brevo.com`), which is how they were found.
+
+2. **DKIM alone will not fix delivery while the sender is off-domain.** Brevo
+   signs with the DKIM key of the *sending* domain. The configured sender is
+   `digitsmystical@11048820.brevosend.com`, so messages are signed for
+   `brevosend.com` and the `mysticaldigits.com` key above is never exercised.
+   Changing the From address to `@mysticaldigits.com` is therefore not a
+   nice-to-have follow-up — it is the step that activates the DKIM work.
+
+Still outstanding after this update: **SPF is absent** and **DMARC reports still
+go to `lovable.dev`**. Both need a DNS-write-capable Cloudflare token.
+
+---
+
 ## What is actually working
 
 The lead endpoint is live on both hosts and Brevo accepts the message. This was

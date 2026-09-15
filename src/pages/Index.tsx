@@ -16,10 +16,11 @@ import FloatingParticles from "@/components/FloatingParticles";
 import { calculateFullProfile, type NumerologyProfile } from "@/lib/numerology";
 import { getInterpretationSafe, birthdayInterpretations } from "@/lib/interpretations";
 import { saveProfile, saveBuyerEmail, loadBuyerEmail, isPremiumUnlocked, resolveEntitlement } from "@/lib/entitlement";
+import { parseIsoDateLocal } from "@/lib/localDate";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
-type Phase = "landing" | "email-gate" | "calculating" | "revealing" | "results" | "url-error";
+type Phase = "landing" | "email-gate" | "calculating" | "revealing" | "results";
 
 const loadingSteps = [
   "Mapping your birth numbers…",
@@ -36,7 +37,7 @@ const Index = () => {
   const [userDob, setUserDob] = useState<Date | null>(null);
   const [phase, setPhase] = useState<Phase>("landing");
   const [loadingStep, setLoadingStep] = useState(0);
-  const [urlError, setUrlError] = useState("");
+  const [intakeNotice, setIntakeNotice] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [autoDownload, setAutoDownload] = useState(false);
   // read once on mount — if this visitor already bought the Premium Edition,
@@ -64,47 +65,40 @@ const Index = () => {
     const emailParam = params.get("email");
     const downloadParam = params.get("download");
 
-    if (nameParam || dobParam) {
-      if (!nameParam || !dobParam) {
-        setUrlError("Both name and birth date parameters are required to bypass the quiz.");
-        setPhase("url-error");
-        return;
-      }
+    if (!nameParam && !dobParam) return;
 
-      // Decode '+' as spaces
-      const decodedName = nameParam.replace(/\+/g, " ").trim();
-      const decodedDob = dobParam.trim();
+    // Decode '+' as spaces
+    const decodedName = (nameParam ?? "").replace(/\+/g, " ").trim();
+    const decodedDob = (dobParam ?? "").trim();
 
-      // Validate date format strictly as YYYY-MM-DD
-      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-      if (!dateRegex.test(decodedDob)) {
-        setUrlError(`Invalid birth date format: "${decodedDob}". Please use YYYY-MM-DD format (e.g. 1990-05-15).`);
-        setPhase("url-error");
-        return;
-      }
+    if (emailParam) setUserEmail(emailParam.trim());
+    if (downloadParam === "1") setAutoDownload(true);
 
-      const parsedDob = new Date(decodedDob);
-      if (isNaN(parsedDob.getTime())) {
-        setUrlError(`Invalid birth date: "${decodedDob}". Please verify the date is correct.`);
-        setPhase("url-error");
-        return;
-      }
+    // Read as local midnight, the same way GuidedIntake does — see
+    // @/lib/localDate for why a plain new Date(iso) is wrong here.
+    const parsedDob = parseIsoDateLocal(decodedDob);
 
+    if (!decodedName || !parsedDob) {
+      // The link did not survive the trip — most often an ESP merge tag that
+      // failed to substitute, or a birth date emitted in a locale format.
+      // Recover instead of dead-ending: keep whatever we could read and ask
+      // only for the piece that is missing.
       setUserName(decodedName);
-      setUserDob(parsedDob);
-
-      if (emailParam) {
-        setUserEmail(emailParam.trim());
-      }
-
-      if (downloadParam === "1") {
-        setAutoDownload(true);
-      }
-
-      const calculatedProfile = calculateFullProfile(decodedName, parsedDob);
-      setProfile(calculatedProfile);
-      setPhase("results");
+      setIntakeNotice(
+        decodedName
+          ? "We couldn't read a birth date from your link, so please confirm it below."
+          : "That link didn't include everything we need — please enter your details below.",
+      );
+      setPhase("landing");
+      return;
     }
+
+    setUserName(decodedName);
+    setUserDob(parsedDob);
+
+    const calculatedProfile = calculateFullProfile(decodedName, parsedDob);
+    setProfile(calculatedProfile);
+    setPhase("results");
   }, []);
 
   const handleSubmit = (name: string, dob: Date) => {
@@ -157,38 +151,6 @@ const Index = () => {
       }
     }, 3800);
   };
-
-  // ── URL Error ──
-  if (phase === "url-error") {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-5">
-        <FloatingParticles />
-        <div className="relative z-10 text-center max-w-md w-full bg-card/60 border border-destructive/20 p-8 rounded-3xl shadow-xl">
-          <div className="w-16 h-16 bg-destructive/10 border border-destructive/30 rounded-full flex items-center justify-center mx-auto mb-6">
-            <span className="text-destructive font-display text-2xl font-bold">!</span>
-          </div>
-          <h2 className="font-display text-2xl text-gradient-gold mb-3">Invalid Link</h2>
-          <p className="font-body text-sm text-muted-foreground mb-6 leading-relaxed">
-            {urlError}
-          </p>
-          <button
-            onClick={() => {
-              setPhase("landing");
-              setUserName("");
-              setUserDob(null);
-              setUrlError("");
-              setUserEmail("");
-              setAutoDownload(false);
-              window.history.replaceState({}, document.title, window.location.pathname);
-            }}
-            className="w-full h-12 bg-primary text-primary-foreground rounded-xl font-display text-sm tracking-widest uppercase hover:bg-gold-light transition-all duration-300"
-          >
-            Restart Quiz
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   // ── Email Gate ──
   if (phase === "email-gate") {
@@ -428,7 +390,7 @@ const Index = () => {
           Personality, Birthday & Personal Year — in a free, personalized reading.
         </motion.p>
 
-        <GuidedIntake onComplete={handleSubmit} />
+        <GuidedIntake onComplete={handleSubmit} initialName={userName} notice={intakeNotice} />
 
         <motion.div
           initial={{ opacity: 0 }}
