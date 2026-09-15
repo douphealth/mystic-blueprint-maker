@@ -104,7 +104,7 @@ Use this format for your CTA buttons:
   <p><strong>The MysticalDigits Team</strong></p>
 
   <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(18, 16, 28, 0.1); font-size: 12px; color: #9D9380; text-align: center;">
-    <p>Explore resources: <a href="https://mysticaldigits.com" style="color: #DDB146; text-decoration: none;">mysticaldigits.com</a> · Read our blog: <a href="https://mysticaldigits.com/blog" style="color: #DDB146; text-decoration: none;">Guides & Insights</a></p>
+    <p>Explore resources: <a href="https://mysticaldigits.com" style="color: #DDB146; text-decoration: none;">mysticaldigits.com</a> · Read our blog: <a href="https://mysticaldigits.com/blog/" style="color: #DDB146; text-decoration: none;">Guides & Insights</a></p>
   </div>
 </div>
 ```
@@ -154,7 +154,7 @@ Use this format for your CTA buttons:
   <p><strong>The MysticalDigits Team</strong></p>
 
   <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(18, 16, 28, 0.1); font-size: 12px; color: #9D9380; text-align: center;">
-    <p>Read about numbers: <a href="https://mysticaldigits.com/blog/birthday-numbers-meaning" style="color: #DDB146; text-decoration: none;">Birthday Meanings</a> · Support: <a href="https://mysticaldigits.com" style="color: #DDB146; text-decoration: none;">mysticaldigits.com</a></p>
+    <p>Read about numbers: <a href="https://mysticaldigits.com/birthday-number-numerology/" style="color: #DDB146; text-decoration: none;">Birthday Meanings</a> · Support: <a href="https://mysticaldigits.com" style="color: #DDB146; text-decoration: none;">mysticaldigits.com</a></p>
   </div>
 </div>
 ```
@@ -204,7 +204,7 @@ Use this format for your CTA buttons:
   <p><strong>The MysticalDigits Team</strong></p>
 
   <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(18, 16, 28, 0.1); font-size: 12px; color: #9D9380; text-align: center;">
-    <p>Read about expression: <a href="https://mysticaldigits.com/blog/expression-career-guide" style="color: #DDB146; text-decoration: none;">Career Vector Guide</a> · Home: <a href="https://mysticaldigits.com" style="color: #DDB146; text-decoration: none;">mysticaldigits.com</a></p>
+    <p>Read about expression: <a href="https://mysticaldigits.com/expression-number-insight/" style="color: #DDB146; text-decoration: none;">Career Vector Guide</a> · Home: <a href="https://mysticaldigits.com" style="color: #DDB146; text-decoration: none;">mysticaldigits.com</a></p>
   </div>
 </div>
 ```
@@ -259,7 +259,7 @@ Use this format for your CTA buttons:
   <p><strong>The MysticalDigits Team</strong></p>
 
   <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(18, 16, 28, 0.1); font-size: 12px; color: #9D9380; text-align: center;">
-    <p>Read about timing: <a href="https://mysticaldigits.com/blog/numerology-cycles" style="color: #DDB146; text-decoration: none;">9-Year Cycle Guide</a> · Main site: <a href="https://mysticaldigits.com" style="color: #DDB146; text-decoration: none;">mysticaldigits.com</a></p>
+    <p>Read about timing: <a href="https://mysticaldigits.com/annual-numerology-cycles/" style="color: #DDB146; text-decoration: none;">9-Year Cycle Guide</a> · Main site: <a href="https://mysticaldigits.com" style="color: #DDB146; text-decoration: none;">mysticaldigits.com</a></p>
   </div>
 </div>
 ```
