@@ -18,10 +18,20 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
+    const body = await req.json().catch(() => ({}));
+
+    // The email gate already captured the address before this is called, so
+    // prefilling it removes a redundant step at checkout AND guarantees the
+    // address the webhook keys the entitlement on is one the buyer recognises.
+    const emailFromBody =
+      typeof body?.email === "string" && body.email.includes("@")
+        ? body.email.trim().toLowerCase()
+        : undefined;
+
     // Try to get authenticated user (optional - supports guest checkout)
     let userEmail: string | undefined;
     const authHeader = req.headers.get("Authorization");
-    
+
     if (authHeader?.startsWith("Bearer ")) {
       const supabaseClient = createClient(
         Deno.env.get("SUPABASE_URL") ?? "",
@@ -32,18 +42,26 @@ serve(async (req) => {
       userEmail = data.user?.email;
     }
 
+    const email = userEmail ?? emailFromBody;
+
     // Check for existing Stripe customer
     let customerId: string | undefined;
-    if (userEmail) {
-      const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
+    if (email) {
+      const customers = await stripe.customers.list({ email, limit: 1 });
       if (customers.data.length > 0) {
         customerId = customers.data[0].id;
       }
     }
 
+    // Prefer an explicitly configured site URL over the request Origin header,
+    // which any caller can set. Falling back to Origin keeps local development
+    // working without extra configuration.
+    const siteUrl = Deno.env.get("SITE_URL") ?? req.headers.get("origin") ?? "";
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      customer_email: customerId ? undefined : userEmail,
+      customer_email: customerId ? undefined : email,
+      client_reference_id: "premium_blueprint",
       line_items: [
         {
           price: "price_1THmEhGCqwm95OGXkduBlzY4",
@@ -51,8 +69,11 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/payment-success`,
-      cancel_url: `${req.headers.get("origin")}/payment-canceled`,
+      // The session id comes back on the success URL so /payment-success can ask
+      // verify-entitlement to confirm THIS checkout completed, rather than
+      // trusting a client-side flag.
+      success_url: `${siteUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${siteUrl}/payment-canceled`,
     });
 
     return new Response(JSON.stringify({ url: session.url }), {

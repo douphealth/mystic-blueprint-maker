@@ -1,62 +1,88 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle, Sparkles, AlertTriangle, ArrowRight } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { CheckCircle, Sparkles, ShieldCheck, Loader2, ArrowRight, MailQuestion } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useNavigate } from "react-router-dom";
-import PremiumPdfButton from "@/components/PremiumPdfButton";
-import { calculateFullProfile, type NumerologyProfile } from "@/lib/numerology";
-import { loadProfileAsDate, markPremiumUnlocked } from "@/lib/entitlement";
+import PremiumDelivery from "@/components/PremiumDelivery";
+import { resolveEntitlement, loadBuyerEmail, type Entitlement } from "@/lib/entitlement";
 import { PREMIUM_PAGE_COUNT } from "@/lib/editions";
 
 /**
- * Stripe's success_url lands here.
+ * Where Stripe's success_url lands.
  *
  * This page has one job: hand over the thing that was paid for. It previously
  * did not — it congratulated the buyer and sent them back to a homepage that
  * still showed the paywall.
  *
- * The profile comes from localStorage, written when the visitor completed the
- * intake. If storage is unavailable or the purchase happened in a different
- * browser, we ask for the name and birth date again rather than leaving the
- * customer with nothing.
+ * Two rules govern everything here:
+ *
+ *   1. Delivery never waits on the network. The PDF is generated in the
+ *      browser, so the entitlement check is an enhancement, not a dependency.
+ *   2. Arriving on this URL is itself evidence of payment. Only Stripe
+ *      redirects a browser here, and the production checkout is a payment link
+ *      that does not reliably carry a session id — so requiring one would mean
+ *      a buyer who paid in a fresh browser gets nothing.
+ *
+ * The check runs anyway, because a verified purchase is worth recording and
+ * worth showing. It just never gets to veto the download.
  */
 const PaymentSuccess = () => {
   const navigate = useNavigate();
-  const [needsDetails, setNeedsDetails] = useState(false);
-  const [name, setName] = useState("");
-  const [dob, setDob] = useState("");
-  const [error, setError] = useState("");
-  const [manualProfile, setManualProfile] = useState<{ profile: NumerologyProfile; name: string } | null>(null);
+  const [params] = useSearchParams();
+  const sessionId = params.get("session_id") ?? undefined;
 
-  const stored = useMemo(() => loadProfileAsDate(), []);
+  const [entitlement, setEntitlement] = useState<Entitlement | null>(null);
+  const email = loadBuyerEmail();
 
   useEffect(() => {
-    // only mark the entitlement once the buyer has actually arrived here,
-    // which only happens via Stripe's success redirect
-    markPremiumUnlocked();
-    if (!stored) setNeedsDetails(true);
-  }, [stored]);
+    let active = true;
 
-  const ready = stored
-    ? { profile: calculateFullProfile(stored.name, stored.dob), name: stored.name }
-    : manualProfile;
+    // A short grace period so the status line does not flicker between states
+    // on a fast connection, and so the buyer reads a confirmation rather than
+    // watching a spinner blink.
+    const started = Date.now();
+    const MIN_VISIBLE_MS = 600;
 
-  const handleManualSubmit = () => {
-    const trimmed = name.trim();
-    if (!trimmed) {
-      setError("Please enter the full name used for the reading.");
-      return;
-    }
-    const parsed = new Date(dob);
-    if (!dob || Number.isNaN(parsed.getTime())) {
-      setError("Please enter a valid birth date.");
-      return;
-    }
-    setError("");
-    setManualProfile({ profile: calculateFullProfile(trimmed, parsed), name: trimmed });
-    setNeedsDetails(false);
-  };
+    resolveEntitlement({ sessionId, email: email ?? undefined, trustRedirect: true })
+      .then(async (result) => {
+        const elapsed = Date.now() - started;
+        if (elapsed < MIN_VISIBLE_MS) {
+          await new Promise((r) => setTimeout(r, MIN_VISIBLE_MS - elapsed));
+        }
+        if (active) setEntitlement(result);
+      })
+      .catch(() => {
+        // resolveEntitlement is written not to throw; this is belt and braces
+        // so an unexpected failure still cannot strand a paying customer.
+        if (active) {
+          setEntitlement({
+            entitled: true,
+            source: "stripe-redirect",
+            email: email ?? undefined,
+            unverified: true,
+          });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
+
+  if (!entitlement) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
+          <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto mb-4" />
+          <p className="font-display text-lg text-gradient-gold mb-1">Confirming your purchase…</p>
+          <p className="font-ui text-xs text-muted-foreground">This takes a moment.</p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  const verified = entitlement.entitled && entitlement.source === "server";
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -75,69 +101,59 @@ const PaymentSuccess = () => {
           <CheckCircle className="w-10 h-10 text-primary" />
         </motion.div>
 
-        <h1 className="font-display text-3xl text-gradient-gold mb-3">Payment received</h1>
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <Sparkles className="w-4 h-4 text-primary" />
-          <p className="font-body text-foreground/60">Thank you — your Premium Edition is unlocked</p>
-          <Sparkles className="w-4 h-4 text-primary" />
-        </div>
-
-        {ready ? (
+        {entitlement.entitled ? (
           <>
-            <p className="font-ui text-sm text-muted-foreground mb-8 max-w-lg mx-auto">
-              Your {PREMIUM_PAGE_COUNT}-page Premium Edition starts downloading automatically. Keep this page bookmarked
-              — you can download it again as many times as you like.
-            </p>
-            <PremiumPdfButton profile={ready.profile} name={ready.name} autoDownload />
-          </>
-        ) : needsDetails ? (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-md mx-auto text-left rounded-2xl border border-border/50 bg-card/60 p-6 mb-8"
-          >
-            <div className="flex items-start gap-3 mb-4">
-              <AlertTriangle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-              <p className="font-body text-sm text-muted-foreground">
-                We need the name and birth date your reading was built from — this browser doesn't have them saved.
-                Enter them exactly as before and your Premium Edition will be generated immediately.
-              </p>
+            <h1 className="font-display text-3xl text-gradient-gold mb-3">Payment received</h1>
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <p className="font-body text-foreground/60">Thank you — your Premium Edition is unlocked</p>
+              <Sparkles className="w-4 h-4 text-primary" />
             </div>
 
-            <label className="font-ui text-[10px] tracking-wider text-muted-foreground uppercase">Full birth name</label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="As it appears on your birth certificate"
-              className="bg-card/60 border-border/60 text-foreground font-body mt-1.5 mb-4 h-12"
-            />
+            {verified ? (
+              <p className="font-ui text-[11px] text-muted-foreground inline-flex items-center gap-1.5 mb-6">
+                <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+                Purchase verified
+                {entitlement.email ? <span className="text-muted-foreground/60">· {entitlement.email}</span> : null}
+              </p>
+            ) : (
+              <p className="font-ui text-[11px] text-muted-foreground mb-6">
+                Your payment is confirmed
+                {entitlement.email ? <span className="text-muted-foreground/60"> · {entitlement.email}</span> : null}
+              </p>
+            )}
 
-            <label className="font-ui text-[10px] tracking-wider text-muted-foreground uppercase">Date of birth</label>
-            <Input
-              type="date"
-              value={dob}
-              onChange={(e) => setDob(e.target.value)}
-              className="bg-card/60 border-border/60 text-foreground font-body mt-1.5 mb-4 h-12"
-            />
+            <p className="font-ui text-sm text-muted-foreground mb-8 max-w-lg mx-auto">
+              Your {PREMIUM_PAGE_COUNT}-page Premium Edition starts downloading automatically. Keep this page
+              bookmarked — you can download it again as many times as you like.
+            </p>
 
-            {error && <p className="text-destructive text-xs font-ui mb-3">{error}</p>}
-
+            <PremiumDelivery autoDownload />
+          </>
+        ) : (
+          <>
+            <h1 className="font-display text-3xl text-gradient-gold mb-3">We couldn't confirm a purchase</h1>
+            <p className="font-body text-sm text-muted-foreground mb-6 max-w-md mx-auto">
+              If you paid with a different email address, you can restore it from your reading page. If you think this
+              is a mistake, reply to your Stripe receipt and we'll sort it out.
+            </p>
             <Button
-              onClick={handleManualSubmit}
-              className="w-full h-12 bg-primary text-primary-foreground hover:bg-gold-light shadow-gold font-display tracking-[0.13em] uppercase"
+              onClick={() => navigate("/")}
+              className="h-12 px-8 bg-primary text-primary-foreground hover:bg-gold-light shadow-gold font-display tracking-[0.13em] uppercase"
             >
-              Generate My Premium Edition <ArrowRight className="w-4 h-4 ml-2" />
+              <MailQuestion className="w-4 h-4 mr-2" />
+              Restore my purchase
             </Button>
-          </motion.div>
-        ) : null}
+          </>
+        )}
 
-        <div className="mt-2">
+        <div className="mt-6">
           <Button
             variant="ghost"
             onClick={() => navigate("/")}
             className="font-ui text-xs text-muted-foreground hover:text-foreground tracking-wider"
           >
-            Back to my blueprint
+            Back to my blueprint <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
           </Button>
         </div>
       </motion.div>

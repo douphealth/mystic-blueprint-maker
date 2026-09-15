@@ -2,7 +2,8 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Lock, Heart, TrendingUp, Compass, Lightbulb, Download, Star, Loader2, Zap, Layers } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import RestorePurchase from "@/components/RestorePurchase";
+import { startCheckout } from "@/lib/premiumApi";
 import { FREE_PAGE_COUNT, PREMIUM_PAGE_LABEL, PREMIUM_PAGE_COUNT } from "@/lib/editions";
 import { useToast } from "@/hooks/use-toast";
 
@@ -19,22 +20,29 @@ const premiumModules = [
   { icon: Download, title: `${PREMIUM_PAGE_LABEL} Premium Edition PDF`, desc: "Museum-quality printable report — a keepsake you'll reference for years" },
 ];
 
-const PremiumPaywall = () => {
+interface PremiumPaywallProps {
+  /** Captured by the email gate; prefills checkout so the buyer doesn't retype it. */
+  email?: string;
+  /** Fired when a restore succeeds, so the parent can swap in the download. */
+  onUnlocked?: () => void;
+}
+
+const PremiumPaywall = ({ email, onUnlocked }: PremiumPaywallProps) => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const handleUnlock = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-payment");
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, "_blank");
-      }
-    } catch (err: any) {
+      // startCheckout tries the backend first and falls back to the static
+      // Stripe payment link, so this no longer surfaces a raw network error
+      // when the edge function is unreachable.
+      const { url } = await startCheckout(email);
+      window.open(url, "_blank");
+    } catch (err: unknown) {
       toast({
         title: "Payment error",
-        description: err.message || "Something went wrong. Please try again.",
+        description: err instanceof Error ? err.message : "Something went wrong. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -120,6 +128,9 @@ const PremiumPaywall = () => {
             Built from your exact name and birth date — not generic
           </p>
         </motion.div>
+
+        {/* The way back in for anyone who already paid. */}
+        <RestorePurchase defaultEmail={email} onRestored={onUnlocked} />
       </div>
 
       {/* Blurred teaser */}

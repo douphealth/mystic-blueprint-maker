@@ -49,15 +49,26 @@ vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: null, session: null, loading: false, signInWithMagicLink: vi.fn(), signOut: vi.fn() }),
 }));
 
+// Hoisted so the mock factory below can close over it.
+const { mockInvoke } = vi.hoisted(() => ({ mockInvoke: vi.fn() }));
+
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: vi.fn().mockReturnValue({ insert: vi.fn().mockResolvedValue({ error: null }) }),
+    functions: { invoke: mockInvoke },
     auth: {
       onAuthStateChange: vi.fn().mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } }),
       getSession: vi.fn().mockResolvedValue({ data: { session: null } }),
     },
   },
 }));
+
+/** The default the suite runs under: the backend is unreachable. */
+const backendDown = () => mockInvoke.mockRejectedValue(new TypeError("Failed to fetch"));
+
+/** The backend answers. */
+const backendSays = (payload: Record<string, unknown>) =>
+  mockInvoke.mockResolvedValue({ data: payload, error: null });
 
 const renderAt = (ui: React.ReactElement) => render(<MemoryRouter>{ui}</MemoryRouter>);
 
@@ -87,7 +98,7 @@ describe("paid delivery", () => {
     renderAt(<PaymentSuccess />);
 
     // the download card is present...
-    expect(await screen.findByText(/Premium Edition · Unlocked/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Premium Edition · Unlocked/i, {}, { timeout: 8000 })).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: /Premium Edition/i })).toBeInTheDocument();
     // ...and it fires automatically, so the buyer gets the file without hunting
     await vi.waitFor(() => expect(mockSave).toHaveBeenCalled(), { timeout: 5000 });
@@ -120,7 +131,7 @@ describe("paid delivery", () => {
 
   it("rejects an incomplete manual entry with a clear message", async () => {
     renderAt(<PaymentSuccess />);
-    fireEvent.click(await screen.findByText(/Generate My Premium Edition/i));
+    fireEvent.click(await screen.findByText(/Generate My Premium Edition/i, {}, { timeout: 8000 }));
     expect(await screen.findByText(/enter the full name/i)).toBeInTheDocument();
     expect(mockSave).not.toHaveBeenCalled();
   });

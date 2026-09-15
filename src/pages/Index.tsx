@@ -15,7 +15,7 @@ import PremiumPdfButton from "@/components/PremiumPdfButton";
 import FloatingParticles from "@/components/FloatingParticles";
 import { calculateFullProfile, type NumerologyProfile } from "@/lib/numerology";
 import { getInterpretationSafe, birthdayInterpretations } from "@/lib/interpretations";
-import { saveProfile, isPremiumUnlocked } from "@/lib/entitlement";
+import { saveProfile, saveBuyerEmail, loadBuyerEmail, isPremiumUnlocked, resolveEntitlement } from "@/lib/entitlement";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -376,7 +376,7 @@ const Index = () => {
           {premiumUnlocked ? (
             <PremiumPdfButton profile={profile} name={userName} />
           ) : (
-            <PremiumPaywall />
+            <PremiumPaywall email={userEmail} onUnlocked={() => setPremiumUnlocked(true)} />
           )}
 
           {/* Footer */}
