@@ -8,21 +8,25 @@ import RestorePurchase from "../components/RestorePurchase";
 /**
  * The revenue path.
  *
+ * These tests intercept `fetch`, the real transport, rather than mocking the
+ * backend module. That distinction is not cosmetic: the previous revision of
+ * this suite mocked `supabase.functions.invoke`, which meant it stayed green
+ * while the Supabase project behind that client had been deleted. Mocking the
+ * thing under test is what hid the outage, so it is not done here.
+ *
  * Two facts about the deployed environment shape every assertion here:
  *
- *   1. The Supabase project configured in the repo does not resolve in DNS, so
- *      the backend is effectively absent. The fallback is not a hypothetical —
- *      it is the code path that runs today.
- *   2. The PDF is generated in the browser, so delivery never needs a server.
- *      A failed entitlement check must therefore never cost a paying customer
- *      their file.
+ *   1. The backend is now this site's WordPress install. When it is unreachable,
+ *      the fallback chain is the code path that runs — and it must never cost a
+ *      paying customer their file, because the PDF is generated in the browser.
+ *   2. A transport failure must resolve as "inconclusive", never as "not
+ *      entitled". Those are different states and conflating them locks out
+ *      buyers who did nothing wrong.
  */
 
-const { mockInvoke } = vi.hoisted(() => ({ mockInvoke: vi.fn() }));
+const { mockFetch } = vi.hoisted(() => ({ mockFetch: vi.fn() }));
 
-vi.mock("@/integrations/supabase/client", () => ({
-  supabase: { functions: { invoke: mockInvoke } },
-}));
+vi.stubGlobal("fetch", mockFetch);
 
 vi.mock("jspdf", () => ({
   default: vi.fn().mockImplementation(() => ({
@@ -53,13 +57,24 @@ vi.mock("jspdf", () => ({
   })),
 }));
 
-const backendDown = () => mockInvoke.mockRejectedValue(new TypeError("Failed to fetch"));
+/** A reachable backend that answers with the given JSON body. */
 const backendSays = (payload: Record<string, unknown>) =>
-  mockInvoke.mockResolvedValue({ data: payload, error: null });
+  mockFetch.mockResolvedValue({
+    ok: true,
+    status: 200,
+    json: async () => payload,
+  });
+
+/** The backend is unreachable — DNS failure, offline, timeout. */
+const backendDown = () => mockFetch.mockRejectedValue(new TypeError("Failed to fetch"));
+
+/** A reachable backend that returns an HTTP error. */
+const backendErrors = (status = 500) =>
+  mockFetch.mockResolvedValue({ ok: false, status, json: async () => ({}) });
 
 beforeEach(() => {
   window.localStorage.clear();
-  mockInvoke.mockReset();
+  mockFetch.mockReset();
   backendDown();
 });
 
@@ -88,11 +103,36 @@ describe("checkout", () => {
   });
 
   it("falls back rather than surfacing an error when the backend 500s", async () => {
-    mockInvoke.mockResolvedValue({ data: null, error: new Error("500") });
+    backendErrors(500);
 
     const result = await startCheckout();
 
     expect(result.mode).toBe("link");
+  });
+
+  it("prefills the buyer email on the Stripe link fallback", async () => {
+    backendDown();
+
+    const result = await startCheckout("Amara@Example.com ");
+
+    expect(result.mode).toBe("link");
+    expect(result.url).toContain("prefilled_email=amara%40example.com");
+  });
+
+  it("uses the restore URL the backend returns for an already-entitled buyer", async () => {
+    // The backend answers with a restore URL rather than a checkout URL, so a
+    // returning buyer is never charged twice.
+    backendSays({
+      url: "https://blueprint.mysticaldigits.com/?restore=1&email=amara%40example.com",
+      mode: "already_entitled",
+      entitled: true,
+    });
+
+    const result = await startCheckout("amara@example.com");
+
+    expect(result.mode).toBe("server");
+    expect(result.url).toContain("restore=1");
+    expect(result.url).not.toContain("buy.stripe.com");
   });
 });
 
@@ -210,7 +250,7 @@ describe("restore purchase UI", () => {
     fireEvent.click(screen.getByText(/Restore my purchase/i));
 
     expect(await screen.findByText(/Enter the email address you used at checkout/i)).toBeInTheDocument();
-    expect(mockInvoke).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   it("prefills the address captured by the email gate", () => {

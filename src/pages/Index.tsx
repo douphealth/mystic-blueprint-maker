@@ -18,7 +18,6 @@ import { getInterpretationSafe, birthdayInterpretations } from "@/lib/interpreta
 import { saveProfile, saveBuyerEmail, loadBuyerEmail, isPremiumUnlocked, resolveEntitlement } from "@/lib/entitlement";
 import { parseIsoDateLocal } from "@/lib/localDate";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 
 type Phase = "landing" | "email-gate" | "calculating" | "revealing" | "results";
 
@@ -140,15 +139,12 @@ const Index = () => {
       setPhase("revealing");
       setTimeout(() => setPhase("results"), 1200);
 
-      // Save reading if authenticated
-      if (user) {
-        supabase.from("saved_readings").insert([{
-          user_id: user.id,
-          full_name: name,
-          birth_date: dob.toISOString().split("T")[0],
-          reading_data: JSON.parse(JSON.stringify(calculatedProfile)),
-        }]).then(() => {});
-      }
+      // The reading is persisted to localStorage by saveProfile(), which is what
+      // the paid flow actually reads back. A server-side copy used to be
+      // attempted here against a Supabase table in a project that no longer
+      // exists, guarded by `if (user)` — and `user` was never non-null, so the
+      // branch could not run. Removed rather than repointed: there is no
+      // account system in this product to attach a stored reading to.
     }, 3800);
   };
 

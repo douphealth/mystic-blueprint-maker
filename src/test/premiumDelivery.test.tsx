@@ -50,12 +50,16 @@ vi.mock("@/contexts/AuthContext", () => ({
 }));
 
 // Hoisted so the mock factory below can close over it.
-const { mockInvoke } = vi.hoisted(() => ({ mockInvoke: vi.fn() }));
+const { mockFetch } = vi.hoisted(() => ({ mockFetch: vi.fn() }));
+
+// Intercept the real transport rather than the backend module. Mocking the
+// backend is what previously let this suite stay green while the configured
+// backend host did not exist at all.
+vi.stubGlobal("fetch", mockFetch);
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: vi.fn().mockReturnValue({ insert: vi.fn().mockResolvedValue({ error: null }) }),
-    functions: { invoke: mockInvoke },
     auth: {
       onAuthStateChange: vi.fn().mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } }),
       getSession: vi.fn().mockResolvedValue({ data: { session: null } }),
@@ -64,11 +68,11 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 /** The default the suite runs under: the backend is unreachable. */
-const backendDown = () => mockInvoke.mockRejectedValue(new TypeError("Failed to fetch"));
+const backendDown = () => mockFetch.mockRejectedValue(new TypeError("Failed to fetch"));
 
 /** The backend answers. */
 const backendSays = (payload: Record<string, unknown>) =>
-  mockInvoke.mockResolvedValue({ data: payload, error: null });
+  mockFetch.mockResolvedValue({ ok: true, status: 200, json: async () => payload });
 
 const renderAt = (ui: React.ReactElement) => render(<MemoryRouter>{ui}</MemoryRouter>);
 

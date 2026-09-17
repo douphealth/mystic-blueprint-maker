@@ -14,16 +14,19 @@
 //   * a failed call is reported as "inconclusive", never as "not entitled"
 //   * a paying customer is never blocked from their file by a network problem
 //
-// WHY THE DEFENSIVENESS IS NOT THEORETICAL
-// The project ref in supabase/config.toml (pqrnobnniqfxysztjrgo) does not
-// resolve in public DNS — it returns NXDOMAIN from both the Cloudflare and the
-// Google resolvers, exactly like a made-up ref. The Supabase project behind it
-// is gone, so every functions.invoke() against it fails.
+// WHO THE BACKEND IS NOW
+// The original backend was a Supabase project (ref pqrnobnniqfxysztjrgo) that
+// no longer resolves in public DNS — NXDOMAIN from both the Cloudflare and the
+// Google resolvers, exactly like a made-up ref. Every functions.invoke() against
+// it failed at DNS, so entitlement could never be confirmed server-side and
+// restore-by-email could never work.
 //
-// That means the premium checkout button could not have worked in production.
-// Rather than hard-depend on a host that may not exist, checkout falls back to
-// the Stripe payment link the live site was already using, so the button keeps
-// working today and upgrades itself the moment a real backend is configured.
+// The backend is now this site's own WordPress install, which already holds the
+// lead pipeline, the email sequence, and an entitlement store written by a
+// signature-verified Stripe webhook. See wpBackend.ts for the transport.
+//
+// The fallback chain is unchanged and still ends at the static Stripe link, so a
+// visitor is never shown a network error they cannot act on.
 // ---------------------------------------------------------------------------
 
 /** The Stripe payment link the live site already uses. Last-resort checkout. */
@@ -58,57 +61,33 @@ export interface VerifyResult {
 
 export interface CheckoutResult {
   url: string;
-  /** "server" = session created by our edge function, "link" = static fallback. */
+  /** "server" = URL supplied by our backend, "link" = static fallback. */
   mode: "server" | "link";
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** Reject rather than hang. A dead host must not stall the page. */
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error("timeout")), ms);
-    promise.then(
-      (value) => {
-        clearTimeout(timer);
-        resolve(value);
-      },
-      (err) => {
-        clearTimeout(timer);
-        reject(err);
-      },
-    );
-  });
-}
-
 /**
- * Imported rather than required at module scope, to keep this optional path
- * from creating a static dependency edge from the entitlement helpers into the
- * Supabase client.
- *
- * Note this does not shrink the bundle: the client is already statically
- * imported by AuthContext and Index, so Vite keeps it in the main chunk and
- * says as much during the build. The win here is a cleaner module graph, not
- * fewer bytes.
+ * Imported lazily by the callers below, so entitlement and checkout carry no
+ * static dependency on any particular backend host.
  */
-async function getClient() {
-  const { supabase } = await import("@/integrations/supabase/client");
-  return supabase;
-}
+import type { WpVerifyPayload } from "./wpBackend";
 
 /** One attempt at asking the backend. Throws only on transport failure. */
 async function askOnce(body: Record<string, string>): Promise<VerifyResult> {
-  const supabase = await getClient();
-  const { data, error } = await withTimeout(
-    supabase.functions.invoke("verify-entitlement", { body }),
-    VERIFY_TIMEOUT_MS,
-  );
+  const { wpVerifyEntitlement } = await import("./wpBackend");
+  const { data, error } = await wpVerifyEntitlement(body, VERIFY_TIMEOUT_MS);
 
   if (error) {
     return { entitled: false, inconclusive: true, reason: "transport" };
   }
   if (data?.entitled === true) {
     return { entitled: true, email: data.email, inconclusive: false };
+  }
+  // The backend tells us plainly when it could not reach a verdict; trust that
+  // over inferring "not found" from a missing field.
+  if ((data as WpVerifyPayload | null)?.inconclusive === true) {
+    return { entitled: false, inconclusive: true, reason: data?.reason ?? "inconclusive" };
   }
   // A definitive answer from a reachable server, but possibly a race with the
   // webhook — the caller decides whether to retry.
@@ -174,13 +153,16 @@ export async function startCheckout(email?: string): Promise<CheckoutResult> {
   const prefilled = cleanEmail && cleanEmail.includes("@") ? cleanEmail : undefined;
 
   try {
-    const supabase = await getClient();
-    const { data, error } = await withTimeout(
-      supabase.functions.invoke("create-payment", { body: { email: prefilled } }),
+    const { wpCreatePayment } = await import("./wpBackend");
+    const { data, error } = await wpCreatePayment(
+      { email: prefilled },
       CHECKOUT_TIMEOUT_MS,
     );
 
     if (!error && typeof data?.url === "string" && data.url.startsWith("http")) {
+      // The backend returns a restore URL when this buyer is already entitled,
+      // so a returning purchaser is never sent back through checkout and
+      // charged twice. Treat that as a server-mode result either way.
       return { url: data.url, mode: "server" };
     }
   } catch {
