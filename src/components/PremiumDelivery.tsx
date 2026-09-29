@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import PremiumPdfButton from "@/components/PremiumPdfButton";
 import { calculateFullProfile, type NumerologyProfile } from "@/lib/numerology";
 import { loadProfileAsDate } from "@/lib/entitlement";
+import { parseIsoDateLocal } from "@/lib/localDate";
 
 /**
  * Hands over the paid artifact.
@@ -47,8 +48,8 @@ const PremiumDelivery = ({ autoDownload = true }: PremiumDeliveryProps) => {
       setError("Please enter the full name used for the reading.");
       return;
     }
-    const parsed = new Date(dob);
-    if (!dob || Number.isNaN(parsed.getTime())) {
+    const parsed = parseIsoDateLocal(dob);
+    if (!parsed) {
       setError("Please enter a valid birth date.");
       return;
     }
