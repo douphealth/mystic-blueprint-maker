@@ -29,7 +29,7 @@
 // visitor is never shown a network error they cannot act on.
 // ---------------------------------------------------------------------------
 
-/** The Stripe payment link the live site already uses. Last-resort checkout. */
+/** Legacy payment link retained only for diagnostics; checkout no longer falls back to it. */
 export const STRIPE_PAYMENT_LINK = "https://buy.stripe.com/4gM4gz75C4CI1g9bn8ejK03";
 
 /** How long an optional backend call may take before we give up on it. */
@@ -61,8 +61,8 @@ export interface VerifyResult {
 
 export interface CheckoutResult {
   url: string;
-  /** "server" = URL supplied by our backend, "link" = static fallback. */
-  mode: "server" | "link";
+  /** Checkout must be issued by the verified backend. */
+  mode: "server";
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -135,8 +135,9 @@ export function verifyEmail(email: string): Promise<VerifyResult> {
   if (!trimmed.includes("@")) {
     return Promise.resolve({ entitled: false, inconclusive: false, reason: "invalid_email" });
   }
-  // No webhook race here — the payment is long settled.
-  return ask({ email: trimmed }, 1);
+  // Also retry here: immediately after a redirect the webhook can still be
+  // committing the entitlement row keyed by this email.
+  return ask({ email: trimmed }, VERIFY_ATTEMPTS);
 }
 
 /**
@@ -151,29 +152,18 @@ export function verifyEmail(email: string): Promise<VerifyResult> {
 export async function startCheckout(email?: string): Promise<CheckoutResult> {
   const cleanEmail = email?.trim().toLowerCase();
   const prefilled = cleanEmail && cleanEmail.includes("@") ? cleanEmail : undefined;
+  const { wpCreatePayment } = await import("./wpBackend");
+  const { data, error } = await wpCreatePayment({ email: prefilled }, CHECKOUT_TIMEOUT_MS);
 
-  try {
-    const { wpCreatePayment } = await import("./wpBackend");
-    const { data, error } = await wpCreatePayment(
-      { email: prefilled },
-      CHECKOUT_TIMEOUT_MS,
-    );
-
-    if (!error && typeof data?.url === "string" && data.url.startsWith("http")) {
-      // The backend returns a restore URL when this buyer is already entitled,
-      // so a returning purchaser is never sent back through checkout and
-      // charged twice. Treat that as a server-mode result either way.
-      return { url: data.url, mode: "server" };
-    }
-  } catch {
-    // fall through to the static link
+  if (error) {
+    throw new Error("Secure checkout is temporarily unavailable. No payment was started.");
   }
 
-  // Stripe payment links accept prefilled_email, so the buyer still does not
-  // have to retype the address the email gate already captured.
-  const url = prefilled
-    ? `${STRIPE_PAYMENT_LINK}?prefilled_email=${encodeURIComponent(prefilled)}`
-    : STRIPE_PAYMENT_LINK;
+  if (typeof data?.url !== "string" || !data.url.startsWith("https://")) {
+    throw new Error("Secure checkout returned an invalid payment URL. No payment was started.");
+  }
 
-  return { url, mode: "link" };
+  // The backend may return a restore URL for an already-entitled buyer. That
+  // avoids charging the same customer twice.
+  return { url: data.url, mode: "server" };
 }
