@@ -80,6 +80,8 @@ describe("paid delivery", () => {
   beforeEach(() => {
     window.localStorage.clear();
     mockSave.mockClear();
+    mockFetch.mockReset();
+    backendDown();
   });
 
   it("stores the profile so a later page can rebuild the reading", () => {
@@ -96,8 +98,10 @@ describe("paid delivery", () => {
     expect(loadProfile()).toBeNull();
   });
 
-  it("hands the premium PDF to a buyer whose profile is still stored", async () => {
-    saveProfile("Amara Nightingale", new Date("1990-05-15T00:00:00.000Z"));
+  it("hands the premium PDF to a verified buyer whose profile is still stored", async () => {
+    saveProfile("Amara Nightingale", new Date(1990, 4, 15));
+    window.localStorage.setItem("md:buyer-email", "amara@example.com");
+    backendSays({ entitled: true, email: "amara@example.com" });
 
     renderAt(<PaymentSuccess />);
 
@@ -110,15 +114,18 @@ describe("paid delivery", () => {
     expect(isPremiumUnlocked()).toBe(true);
   });
 
-  it("asks for the details again rather than delivering nothing", async () => {
-    // no stored profile — different browser, or storage unavailable
+  it("asks a verified buyer for details again when the profile is unavailable", async () => {
+    window.localStorage.setItem("md:buyer-email", "amara@example.com");
+    backendSays({ entitled: true, email: "amara@example.com" });
     renderAt(<PaymentSuccess />);
 
     expect(await screen.findByText(/Full birth name/i)).toBeInTheDocument();
     expect(screen.queryByText(/Premium Edition · Unlocked/i)).not.toBeInTheDocument();
   });
 
-  it("generates the premium edition from manually entered details", async () => {
+  it("generates the premium edition from manually entered details after verification", async () => {
+    window.localStorage.setItem("md:buyer-email", "amara@example.com");
+    backendSays({ entitled: true, email: "amara@example.com" });
     const { container } = renderAt(<PaymentSuccess />);
 
     fireEvent.change(await screen.findByPlaceholderText(/birth certificate/i), {
@@ -134,18 +141,31 @@ describe("paid delivery", () => {
   });
 
   it("rejects an incomplete manual entry with a clear message", async () => {
+    window.localStorage.setItem("md:buyer-email", "amara@example.com");
+    backendSays({ entitled: true, email: "amara@example.com" });
     renderAt(<PaymentSuccess />);
     fireEvent.click(await screen.findByText(/Generate My Premium Edition/i, {}, { timeout: 8000 }));
     expect(await screen.findByText(/enter the full name/i)).toBeInTheDocument();
     expect(mockSave).not.toHaveBeenCalled();
   });
 
-  it("shows the download instead of the paywall to a returning buyer", async () => {
-    window.localStorage.setItem("md:premium-unlocked", new Date().toISOString());
+
+  it("does not expose Premium content on a direct success-page visit", async () => {
+    saveProfile("Amara Nightingale", new Date(1990, 4, 15));
+    renderAt(<PaymentSuccess />);
+
+    expect(await screen.findByText(/couldn't confirm a purchase/i, {}, { timeout: 8000 })).toBeInTheDocument();
+    expect(screen.queryByText(/Premium Edition · Unlocked/i)).not.toBeInTheDocument();
+    expect(mockSave).not.toHaveBeenCalled();
+  });
+
+  it("shows the download instead of the paywall to a server-verified returning buyer", async () => {
+    window.localStorage.setItem("md:buyer-email", "amara@example.com");
+    backendSays({ entitled: true, email: "amara@example.com" });
 
     Object.defineProperty(window, "location", {
       writable: true,
-      value: { ...window.location, search: "?name=Jane+Doe&dob=1995-10-22" },
+      value: { ...window.location, search: "?name=Jane+Doe&dob=1995-10-22&email=amara%40example.com" },
     });
 
     render(<Index />);
