@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import React from "react";
-import { STRIPE_PAYMENT_LINK, startCheckout } from "../lib/premiumApi";
+import { startCheckout } from "../lib/premiumApi";
 import { resolveEntitlement, isPremiumUnlocked, loadBuyerEmail, saveBuyerEmail } from "../lib/entitlement";
 import RestorePurchase from "../components/RestorePurchase";
 
@@ -79,18 +79,8 @@ beforeEach(() => {
 });
 
 describe("checkout", () => {
-  it("falls back to the live payment link when the backend is unreachable", async () => {
-    const result = await startCheckout();
-
-    expect(result.mode).toBe("link");
-    expect(result.url).toBe(STRIPE_PAYMENT_LINK);
-  });
-
-  it("still prefills the buyer's email on the fallback link", async () => {
-    const result = await startCheckout("Amara@Example.com");
-
-    expect(result.mode).toBe("link");
-    expect(result.url).toContain("prefilled_email=amara%40example.com");
+  it("does not start a payment when the secure backend is unreachable", async () => {
+    await expect(startCheckout()).rejects.toThrow(/temporarily unavailable/i);
   });
 
   it("prefers the server-created session when the backend answers", async () => {
@@ -102,21 +92,9 @@ describe("checkout", () => {
     expect(result.url).toContain("cs_test_123");
   });
 
-  it("falls back rather than surfacing an error when the backend 500s", async () => {
+  it("does not start a payment when the backend returns an error", async () => {
     backendErrors(500);
-
-    const result = await startCheckout();
-
-    expect(result.mode).toBe("link");
-  });
-
-  it("prefills the buyer email on the Stripe link fallback", async () => {
-    backendDown();
-
-    const result = await startCheckout("Amara@Example.com ");
-
-    expect(result.mode).toBe("link");
-    expect(result.url).toContain("prefilled_email=amara%40example.com");
+    await expect(startCheckout()).rejects.toThrow(/temporarily unavailable/i);
   });
 
   it("uses the restore URL the backend returns for an already-entitled buyer", async () => {
@@ -137,13 +115,12 @@ describe("checkout", () => {
 });
 
 describe("entitlement resolution", () => {
-  it("grants on a Stripe redirect even when the backend cannot be reached", async () => {
+  it("does not grant on a forged or unverifiable Stripe session", async () => {
     const result = await resolveEntitlement({ sessionId: "cs_test_abc" });
 
-    expect(result.entitled).toBe(true);
-    expect(result.source).toBe("stripe-redirect");
-    // recorded, so the paywall stays off on the next visit
-    expect(isPremiumUnlocked()).toBe(true);
+    expect(result.entitled).toBe(false);
+    expect(result.source).toBe("none");
+    expect(isPremiumUnlocked()).toBe(false);
   });
 
   it("reports a verified purchase when the backend confirms the session", async () => {
@@ -176,14 +153,14 @@ describe("entitlement resolution", () => {
     expect(isPremiumUnlocked()).toBe(false);
   });
 
-  it("still grants when the backend says no but this browser bought under another address", async () => {
+  it("does not accept a localStorage flag as proof of purchase", async () => {
     backendSays({ entitled: false, reason: "not_found" });
     window.localStorage.setItem("md:premium-unlocked", new Date().toISOString());
 
     const result = await resolveEntitlement({ email: "other@example.com" });
 
-    expect(result.entitled).toBe(true);
-    expect(result.source).toBe("local");
+    expect(result.entitled).toBe(false);
+    expect(result.source).toBe("none");
   });
 
   it("reports no entitlement for a first-time visitor", async () => {
@@ -193,15 +170,12 @@ describe("entitlement resolution", () => {
     expect(result.source).toBe("none");
   });
 
-  it("delivers to a payment-link buyer who arrives with no session id", async () => {
-    // The production checkout is a Stripe payment link, which does not reliably
-    // put a session id on the success URL. This is the common case, not an edge
-    // case: the buyer has paid, has a fresh browser, and has no local flag.
-    const result = await resolveEntitlement({ trustRedirect: true });
+  it("does not grant access merely because the browser is on a success route", async () => {
+    const result = await resolveEntitlement();
 
-    expect(result.entitled).toBe(true);
-    expect(result.source).toBe("stripe-redirect");
-    expect(isPremiumUnlocked()).toBe(true);
+    expect(result.entitled).toBe(false);
+    expect(result.source).toBe("none");
+    expect(isPremiumUnlocked()).toBe(false);
   });
 
   it("does not let the redirect trust leak into the restore path", async () => {

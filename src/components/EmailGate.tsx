@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Mail, Sparkles, CheckCircle, ArrowRight, ShieldCheck } from "lucide-react";
 import { submitLifePathLead } from "@/lib/lifePathLead";
 import { FREE_PAGE_COUNT } from "@/lib/editions";
+import { formatIsoDateLocal } from "@/lib/localDate";
 
 interface EmailGateProps {
   userName: string;
@@ -38,7 +39,7 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
       const res = await submitLifePathLead({
         email: email.trim(),
         fullName: userName,
-        birthDate: birthDate ? birthDate.toISOString().split("T")[0] : undefined,
+        birthDate: birthDate ? formatIsoDateLocal(birthDate) ?? undefined : undefined,
       });
       delivered = res.ok;
       if (!res.ok) {

@@ -66,7 +66,12 @@ export function saveProfile(name: string, dob: Date): void {
   if (!name || Number.isNaN(dob.getTime())) return;
   const payload: StoredProfile = {
     name: name.trim(),
-    dob: dob.toISOString().split("T")[0],
+    dob: (() => {
+      const year = dob.getFullYear();
+      const month = String(dob.getMonth() + 1).padStart(2, "0");
+      const day = String(dob.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    })(),
     savedAt: new Date().toISOString(),
   };
   safeSet(PROFILE_KEY, JSON.stringify(payload));
@@ -78,8 +83,14 @@ export function loadProfile(): StoredProfile | null {
   try {
     const parsed = JSON.parse(raw) as Partial<StoredProfile>;
     if (!parsed.name || !parsed.dob) return null;
-    const dob = new Date(parsed.dob);
-    if (Number.isNaN(dob.getTime())) return null;
+    const [year, month, day] = parsed.dob.split("-").map(Number);
+    const dob = new Date(year, month - 1, day);
+    if (
+      Number.isNaN(dob.getTime()) ||
+      dob.getFullYear() !== year ||
+      dob.getMonth() + 1 !== month ||
+      dob.getDate() !== day
+    ) return null;
     return { name: parsed.name, dob: parsed.dob, savedAt: parsed.savedAt ?? "" };
   } catch {
     return null;
@@ -89,8 +100,14 @@ export function loadProfile(): StoredProfile | null {
 export function loadProfileAsDate(): { name: string; dob: Date } | null {
   const stored = loadProfile();
   if (!stored) return null;
-  const dob = new Date(stored.dob);
-  if (Number.isNaN(dob.getTime())) return null;
+  const [year, month, day] = stored.dob.split("-").map(Number);
+  const dob = new Date(year, month - 1, day);
+  if (
+    Number.isNaN(dob.getTime()) ||
+    dob.getFullYear() !== year ||
+    dob.getMonth() + 1 !== month ||
+    dob.getDate() !== day
+  ) return null;
   return { name: stored.name, dob };
 }
 
@@ -127,48 +144,24 @@ export function loadBuyerEmail(): string | null {
 // Resolution
 // ---------------------------------------------------------------------------
 
-export type EntitlementSource = "server" | "stripe-redirect" | "local" | "none";
+export type EntitlementSource = "server" | "none";
 
 export interface Entitlement {
   entitled: boolean;
   source: EntitlementSource;
-  /** The email the purchase is recorded against, when we know it. */
   email?: string;
-  /** The backend could not be reached, so this rests on weaker evidence. */
-  unverified?: boolean;
+  reason?: string;
 }
 
 /**
- * Decide whether this visitor may download the Premium Edition.
- *
- * Precedence: server confirmation > Stripe redirect > local flag.
- *
- * `trustRedirect` must only be set by the page Stripe redirects to. It exists
- * because the checkout in production is a Stripe *payment link*, and payment
- * links do not reliably carry a session id onto the success URL. Requiring one
- * would mean a buyer who paid in a fresh browser lands on "we couldn't confirm
- * a purchase" and receives nothing — charging someone and delivering nothing is
- * a far worse failure than the theoretical visitor who types the URL by hand.
- *
- * The same reasoning applies on the session_id branch, which grants even when
- * the server cannot confirm: a missing row is much more often a delayed or lost
- * webhook than a forged id, and the two mistakes do not cost the same. It is
- * also not a new hole — anyone willing to fake a session id could equally set
- * the localStorage flag.
- *
- * The practical effect is that this function makes the honest path verifiable
- * without ever becoming a single point of failure for delivery.
+ * Premium access is granted only after the backend confirms a Stripe-backed
+ * entitlement. URL shape and localStorage are never treated as proof of payment.
  */
 export async function resolveEntitlement(
-  opts: { sessionId?: string; email?: string; trustRedirect?: boolean } = {},
+  opts: { sessionId?: string; email?: string } = {},
 ): Promise<Entitlement> {
   const sessionId = opts.sessionId?.trim();
   const email = opts.email?.trim().toLowerCase();
-  const locallyUnlocked = isPremiumUnlocked();
-  const knownEmail = email || loadBuyerEmail() || undefined;
-
-  // Imported here rather than at module scope so that the profile helpers do
-  // not drag the Supabase client into every consumer of this file.
   const { verifySession, verifyEmail } = await import("@/lib/premiumApi");
 
   if (sessionId) {
@@ -176,43 +169,20 @@ export async function resolveEntitlement(
     if (result.entitled) {
       markPremiumUnlocked();
       if (result.email) saveBuyerEmail(result.email);
-      return { entitled: true, source: "server", email: result.email ?? knownEmail };
+      return { entitled: true, source: "server", email: result.email ?? email };
     }
-    // Arriving here with a session id means Stripe redirected this browser, so
-    // the payment happened even if we could not read the record back.
-    markPremiumUnlocked();
-    if (knownEmail) saveBuyerEmail(knownEmail);
-    return {
-      entitled: true,
-      source: "stripe-redirect",
-      email: knownEmail,
-      unverified: true,
-    };
+    return { entitled: false, source: "none", reason: result.reason ?? "unverified_session" };
   }
 
   if (email) {
     const result = await verifyEmail(email);
     if (result.entitled) {
       markPremiumUnlocked();
-      saveBuyerEmail(email);
+      saveBuyerEmail(result.email ?? email);
       return { entitled: true, source: "server", email: result.email ?? email };
     }
-    // A definitive "no" from a reachable server still yields to a local flag:
-    // the buyer may have purchased under a different address.
-    if (locallyUnlocked) {
-      return { entitled: true, source: "local", email: knownEmail, unverified: true };
-    }
-    return { entitled: false, source: "none" };
+    return { entitled: false, source: "none", reason: result.reason ?? "not_found" };
   }
 
-  // No session id and no address — we are on the post-checkout page and the
-  // only evidence is that Stripe sent this browser here.
-  if (opts.trustRedirect) {
-    markPremiumUnlocked();
-    return { entitled: true, source: "stripe-redirect", email: knownEmail, unverified: true };
-  }
-
-  return locallyUnlocked
-    ? { entitled: true, source: "local", email: knownEmail }
-    : { entitled: false, source: "none" };
+  return { entitled: false, source: "none", reason: "no_verification_identity" };
 }

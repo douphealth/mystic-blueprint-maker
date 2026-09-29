@@ -15,7 +15,7 @@ import PremiumPdfButton from "@/components/PremiumPdfButton";
 import FloatingParticles from "@/components/FloatingParticles";
 import { calculateFullProfile, type NumerologyProfile } from "@/lib/numerology";
 import { getInterpretationSafe, birthdayInterpretations } from "@/lib/interpretations";
-import { saveProfile, saveBuyerEmail, loadBuyerEmail, isPremiumUnlocked, resolveEntitlement } from "@/lib/entitlement";
+import { saveProfile, saveBuyerEmail, loadBuyerEmail, resolveEntitlement } from "@/lib/entitlement";
 import { parseIsoDateLocal } from "@/lib/localDate";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -39,15 +39,38 @@ const Index = () => {
   const [intakeNotice, setIntakeNotice] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [autoDownload, setAutoDownload] = useState(false);
-  // read once on mount — if this visitor already bought the Premium Edition,
-  // the results page should offer the download rather than the paywall again
-  const [premiumUnlocked, setPremiumUnlocked] = useState(() => isPremiumUnlocked());
+  const [premiumUnlocked, setPremiumUnlocked] = useState(false);
+  const [premiumChecking, setPremiumChecking] = useState(false);
 
-  // re-check when the results screen appears, in case checkout completed in
-  // another tab while this one stayed open
+  // Never treat localStorage as proof of purchase. When results are visible,
+  // ask the entitlement backend using the buyer email we captured. This also
+  // prevents an already-entitled buyer from being charged a second time.
   useEffect(() => {
-    if (phase === "results") setPremiumUnlocked(isPremiumUnlocked());
-  }, [phase]);
+    if (phase !== "results") return;
+    const email = (userEmail || loadBuyerEmail() || "").trim().toLowerCase();
+    if (!email) {
+      setPremiumUnlocked(false);
+      setPremiumChecking(false);
+      return;
+    }
+
+    let active = true;
+    setPremiumChecking(true);
+    resolveEntitlement({ email })
+      .then((result) => {
+        if (active) setPremiumUnlocked(result.entitled);
+      })
+      .catch(() => {
+        if (active) setPremiumUnlocked(false);
+      })
+      .finally(() => {
+        if (active) setPremiumChecking(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [phase, userEmail]);
 
   // Auto-advance past email gate if user becomes authenticated
   useEffect(() => {
@@ -70,7 +93,11 @@ const Index = () => {
     const decodedName = (nameParam ?? "").replace(/\+/g, " ").trim();
     const decodedDob = (dobParam ?? "").trim();
 
-    if (emailParam) setUserEmail(emailParam.trim());
+    if (emailParam) {
+      const cleanEmail = emailParam.trim().toLowerCase();
+      setUserEmail(cleanEmail);
+      saveBuyerEmail(cleanEmail);
+    }
     if (downloadParam === "1") setAutoDownload(true);
 
     // Read as local midnight, the same way GuidedIntake does — see
@@ -110,7 +137,10 @@ const Index = () => {
     }
   };
 
-  const handleEmailComplete = (_email: string) => {
+  const handleEmailComplete = (email: string) => {
+    const cleanEmail = email.trim().toLowerCase();
+    setUserEmail(cleanEmail);
+    saveBuyerEmail(cleanEmail);
     if (userName && userDob) {
       startCalculation(userName, userDob);
     }
@@ -331,10 +361,14 @@ const Index = () => {
               Returning buyers get the download itself, not the paywall again.
               isPremiumUnlocked() is read on mount so that landing back here
               after checkout shows the artifact instead of a second upsell. */}
-          {premiumUnlocked ? (
+          {premiumChecking ? (
+            <div className="mb-8 rounded-2xl border border-border/40 bg-card/50 p-6 text-center">
+              <p className="font-ui text-xs tracking-wider text-muted-foreground">Checking for an existing Premium purchase…</p>
+            </div>
+          ) : premiumUnlocked ? (
             <PremiumPdfButton profile={profile} name={userName} />
           ) : (
-            <PremiumPaywall email={userEmail} onUnlocked={() => setPremiumUnlocked(true)} />
+            <PremiumPaywall email={userEmail || loadBuyerEmail() || ""} onUnlocked={() => setPremiumUnlocked(true)} />
           )}
 
           {/* Footer */}

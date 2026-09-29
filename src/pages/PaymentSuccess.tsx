@@ -43,7 +43,7 @@ const PaymentSuccess = () => {
     const started = Date.now();
     const MIN_VISIBLE_MS = 600;
 
-    resolveEntitlement({ sessionId, email: email ?? undefined, trustRedirect: true })
+    resolveEntitlement({ sessionId, email: email ?? undefined })
       .then(async (result) => {
         const elapsed = Date.now() - started;
         if (elapsed < MIN_VISIBLE_MS) {
@@ -52,15 +52,10 @@ const PaymentSuccess = () => {
         if (active) setEntitlement(result);
       })
       .catch(() => {
-        // resolveEntitlement is written not to throw; this is belt and braces
-        // so an unexpected failure still cannot strand a paying customer.
+        // Never unlock from a URL or transport failure alone. If verification
+        // is unavailable, show recovery guidance instead of exposing paid content.
         if (active) {
-          setEntitlement({
-            entitled: true,
-            source: "stripe-redirect",
-            email: email ?? undefined,
-            unverified: true,
-          });
+          setEntitlement({ entitled: false, source: "none", email: email ?? undefined, reason: "verification_failed" });
         }
       });
 
@@ -82,7 +77,7 @@ const PaymentSuccess = () => {
     );
   }
 
-  const verified = entitlement.entitled && entitlement.source === "server";
+  const verified = entitlement.entitled;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -116,12 +111,7 @@ const PaymentSuccess = () => {
                 Purchase verified
                 {entitlement.email ? <span className="text-muted-foreground/60">· {entitlement.email}</span> : null}
               </p>
-            ) : (
-              <p className="font-ui text-[11px] text-muted-foreground mb-6">
-                Your payment is confirmed
-                {entitlement.email ? <span className="text-muted-foreground/60"> · {entitlement.email}</span> : null}
-              </p>
-            )}
+            ) : null}
 
             <p className="font-ui text-sm text-muted-foreground mb-8 max-w-lg mx-auto">
               Your {PREMIUM_PAGE_COUNT}-page Premium Edition starts downloading automatically. Keep this page
