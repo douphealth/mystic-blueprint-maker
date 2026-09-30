@@ -15,20 +15,49 @@ export function reduceNumber(n: number): number {
   return n;
 }
 
+// Reduce all the way to a single digit, Master Numbers included (11 -> 2,
+// 22 -> 4, 33 -> 6). Challenges and the length of the first Pinnacle are
+// defined on single digits.
+function reduceToDigit(n: number): number {
+  while (n > 9) {
+    n = String(n).split('').reduce((sum, d) => sum + parseInt(d), 0);
+  }
+  return n;
+}
+
 // Life Path Number from date of birth
 export function calculateLifePath(dob: Date): number {
+  return reduceNumber(lifePathTotal(dob));
+}
+
+// The compound total the Life Path is reduced from: month, day and year each
+// reduced on their own (Master Numbers kept), then added.
+function lifePathTotal(dob: Date): number {
   const month = reduceNumber(dob.getMonth() + 1);
   const day = reduceNumber(dob.getDate());
   const year = reduceNumber(
     String(dob.getFullYear()).split('').reduce((s, d) => s + parseInt(d), 0)
   );
-  return reduceNumber(month + day + year);
+  return month + day + year;
 }
 
 // Sum of all letters in name
 function nameSum(name: string): number {
   return name.toUpperCase().split('')
     .filter(c => LETTER_VALUES[c])
+    .reduce((sum, c) => sum + LETTER_VALUES[c], 0);
+}
+
+// Sum of the vowels / consonants in a name (before any reduction)
+function vowelSum(name: string): number {
+  return name.toUpperCase().split('')
+    .filter(c => VOWELS.has(c))
+    .reduce((sum, c) => sum + (LETTER_VALUES[c] || 0), 0);
+}
+
+function consonantSum(name: string): number {
+  return name.toUpperCase().split('')
+    .filter(c => LETTER_VALUES[c] && !VOWELS.has(c))
     .reduce((sum, c) => sum + LETTER_VALUES[c], 0);
 }
 
@@ -39,18 +68,12 @@ export function calculateExpression(fullName: string): number {
 
 // Soul Urge / Heart's Desire (vowels only)
 export function calculateSoulUrge(fullName: string): number {
-  const vowelSum = fullName.toUpperCase().split('')
-    .filter(c => VOWELS.has(c))
-    .reduce((sum, c) => sum + (LETTER_VALUES[c] || 0), 0);
-  return reduceNumber(vowelSum);
+  return reduceNumber(vowelSum(fullName));
 }
 
 // Personality Number (consonants only)
 export function calculatePersonality(fullName: string): number {
-  const consonantSum = fullName.toUpperCase().split('')
-    .filter(c => LETTER_VALUES[c] && !VOWELS.has(c))
-    .reduce((sum, c) => sum + LETTER_VALUES[c], 0);
-  return reduceNumber(consonantSum);
+  return reduceNumber(consonantSum(fullName));
 }
 
 // Birthday Number (just the day reduced)
@@ -81,21 +104,38 @@ export function calculateHiddenPassion(fullName: string): number[] {
     .map(([num]) => parseInt(num));
 }
 
-// Karmic Debt check
-export function calculateKarmicDebt(lifePath: number, expression: number, soulUrge: number, personality: number): number[] {
-  const karmicNumbers = [13, 14, 16, 19];
-  const debts: number[] = [];
+// Karmic Debt: a core number carries one when the compound total it is reduced
+// from is 13, 14, 16 or 19 (13/4, 14/5, 16/7, 19/1). The final single digit is
+// not enough — a plain 7 is not a Karmic Debt 16; a 7 that came from 16 is.
+const KARMIC_DEBT_NUMBERS = [13, 14, 16, 19];
 
-  // Check the unreduced sums for karmic debt indicators
-  // Simplified: we check if any core number reduces FROM a karmic number
-  [lifePath, expression, soulUrge, personality].forEach(n => {
-    karmicNumbers.forEach(k => {
-      if (reduceNumber(k) === n && !debts.includes(k)) {
-        debts.push(k);
-      }
-    });
-  });
-  return debts;
+// Every value a total passes through on its way to a single digit or Master
+// Number, starting with the total itself: 79 -> 16 -> 7 gives [79, 16, 7].
+function reductionChain(total: number): number[] {
+  const chain = [total];
+  let n = total;
+  while (n > 9 && n !== 11 && n !== 22 && n !== 33) {
+    n = String(n).split('').reduce((sum, d) => sum + parseInt(d), 0);
+    chain.push(n);
+  }
+  return chain;
+}
+
+export function calculateKarmicDebt(dob: Date, fullName: string): number[] {
+  const found = new Set<number>();
+  const totals = [
+    lifePathTotal(dob),
+    nameSum(fullName),
+    vowelSum(fullName),
+    consonantSum(fullName),
+    dob.getDate(), // Birthday: born on the 13th, 14th, 16th or 19th
+  ];
+  totals.forEach(total =>
+    reductionChain(total).forEach(step => {
+      if (KARMIC_DEBT_NUMBERS.includes(step)) found.add(step);
+    })
+  );
+  return [...found].sort((a, b) => a - b);
 }
 
 // Pinnacles
@@ -105,7 +145,9 @@ export function calculatePinnacles(dob: Date): { number: number; ageStart: numbe
   const day = reduceNumber(dob.getDate());
   const year = reduceNumber(String(dob.getFullYear()).split('').reduce((s, d) => s + parseInt(d), 0));
 
-  const firstEnd = 36 - lp;
+  // The first Pinnacle runs to age 36 minus the single-digit Life Path. Using
+  // a Master Number here ended it at age 3 for a Life Path 33.
+  const firstEnd = 36 - reduceToDigit(lp);
 
   return [
     { number: reduceNumber(month + day), ageStart: 0, ageEnd: firstEnd },
@@ -115,18 +157,21 @@ export function calculatePinnacles(dob: Date): { number: number; ageStart: numbe
   ];
 }
 
-// Challenges
+// Challenges: the differences between the single-digit month, day and year.
+// Master Numbers are reduced first (Nov -> 2, not 11), which keeps every
+// challenge in the 0-8 range that the readings are written for. Feeding 11 in
+// produced 9 and 11 for about 1 birth date in 15, and neither has a reading.
 export function calculateChallenges(dob: Date): number[] {
-  const month = reduceNumber(dob.getMonth() + 1);
-  const day = reduceNumber(dob.getDate());
-  const year = reduceNumber(String(dob.getFullYear()).split('').reduce((s, d) => s + parseInt(d), 0));
+  const month = reduceToDigit(dob.getMonth() + 1);
+  const day = reduceToDigit(dob.getDate());
+  const year = reduceToDigit(String(dob.getFullYear()).split('').reduce((s, d) => s + parseInt(d), 0));
 
   const first = Math.abs(month - day);
   const second = Math.abs(day - year);
   const third = Math.abs(first - second);
   const fourth = Math.abs(month - year);
 
-  return [reduceNumber(first), reduceNumber(second), reduceNumber(third), reduceNumber(fourth)];
+  return [first, second, third, fourth];
 }
 
 // Personal Month
@@ -164,7 +209,7 @@ export function calculateFullProfile(fullName: string, dob: Date): NumerologyPro
     birthday: calculateBirthday(dob),
     personalYear: calculatePersonalYear(dob, currentYear),
     hiddenPassion: calculateHiddenPassion(fullName),
-    karmicDebt: calculateKarmicDebt(lifePath, expression, soulUrge, personality),
+    karmicDebt: calculateKarmicDebt(dob, fullName),
     pinnacles: calculatePinnacles(dob),
     challenges: calculateChallenges(dob),
     personalMonths: Array.from({ length: 12 }, (_, i) =>

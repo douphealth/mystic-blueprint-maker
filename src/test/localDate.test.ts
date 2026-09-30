@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { parseIsoDateLocal } from "../lib/localDate";
+import { formatIsoDateLocal, parseIsoDateLocal } from "../lib/localDate";
+import { loadProfile, loadProfileAsDate, saveProfile } from "../lib/entitlement";
 import { calculateFullProfile } from "../lib/numerology";
 
 describe("parseIsoDateLocal", () => {
@@ -59,5 +60,52 @@ describe("parseIsoDateLocal", () => {
     expect(calculateFullProfile("Jane Doe", viaLink)).toEqual(
       calculateFullProfile("Jane Doe", viaIntake),
     );
+  });
+});
+
+describe("formatIsoDateLocal", () => {
+  it("writes the calendar day the visitor picked, whatever the timezone", () => {
+    // toISOString().split("T")[0] returned 1990-05-14 for this date east of UTC.
+    expect(formatIsoDateLocal(new Date(1990, 4, 15))).toBe("1990-05-15");
+    expect(formatIsoDateLocal(new Date(2000, 0, 1))).toBe("2000-01-01");
+    expect(formatIsoDateLocal(new Date(1985, 11, 31))).toBe("1985-12-31");
+  });
+
+  it("round-trips with parseIsoDateLocal for every day from 1900 to 2030", () => {
+    // Walks every DST change in the runtime's zone, which is where a
+    // subtract-a-day bug shows up.
+    for (let y = 1900; y <= 2030; y++)
+      for (let m = 0; m < 12; m++)
+        for (let d = 1; d <= 31; d++) {
+          const date = new Date(y, m, d);
+          if (date.getMonth() !== m) continue;
+          const iso = formatIsoDateLocal(date);
+          const back = parseIsoDateLocal(iso);
+          expect(back?.getFullYear()).toBe(y);
+          expect(back?.getMonth()).toBe(m);
+          expect(back?.getDate()).toBe(d);
+        }
+  });
+});
+
+describe("saved profile (what the paid flow rebuilds the reading from)", () => {
+  it("keeps the birth day the visitor chose", () => {
+    window.localStorage.clear();
+    saveProfile("Amara Nightingale", new Date(1990, 4, 15));
+    expect(loadProfile()?.dob).toBe("1990-05-15");
+    const restored = loadProfileAsDate();
+    expect(restored?.dob.getFullYear()).toBe(1990);
+    expect(restored?.dob.getMonth()).toBe(4);
+    // 14 east of UTC (saved wrong) and 14 west of UTC (read back wrong) before the fix
+    expect(restored?.dob.getDate()).toBe(15);
+  });
+
+  it("refuses a stored date that is not a real calendar day", () => {
+    window.localStorage.setItem(
+      "md:blueprint-profile",
+      JSON.stringify({ name: "Someone", dob: "2026-02-31", savedAt: "" }),
+    );
+    expect(loadProfile()).toBeNull();
+    expect(loadProfileAsDate()).toBeNull();
   });
 });

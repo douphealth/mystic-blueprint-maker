@@ -397,9 +397,6 @@ const Index = () => {
           <p className="font-ui text-[10px] text-muted-foreground tracking-wider">
             Free · No account required · All 6 numbers + PDF download
           </p>
-          <p className="font-ui text-[9px] text-muted-foreground/50 tracking-wider">
-            Trusted by 12,000+ people worldwide
-          </p>
         </motion.div>
       </div>
     </div>

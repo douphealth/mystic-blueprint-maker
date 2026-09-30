@@ -83,7 +83,7 @@ describe("paid delivery", () => {
   });
 
   it("stores the profile so a later page can rebuild the reading", () => {
-    saveProfile("Amara Nightingale", new Date("1990-05-15T00:00:00.000Z"));
+    saveProfile("Amara Nightingale", new Date(1990, 4, 15));
     const stored = loadProfile();
     expect(stored?.name).toBe("Amara Nightingale");
     expect(stored?.dob).toBe("1990-05-15");
@@ -97,7 +97,7 @@ describe("paid delivery", () => {
   });
 
   it("hands the premium PDF to a buyer whose profile is still stored", async () => {
-    saveProfile("Amara Nightingale", new Date("1990-05-15T00:00:00.000Z"));
+    saveProfile("Amara Nightingale", new Date(1990, 4, 15));
 
     renderAt(<PaymentSuccess />);
 

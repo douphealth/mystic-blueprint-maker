@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import PremiumDelivery from "@/components/PremiumDelivery";
 import { resolveEntitlement, loadBuyerEmail, type Entitlement } from "@/lib/entitlement";
 import { PREMIUM_PAGE_COUNT } from "@/lib/editions";
+import { useNoindex } from "@/hooks/useNoindex";
 
 /**
  * Where Stripe's success_url lands.
@@ -27,6 +28,7 @@ import { PREMIUM_PAGE_COUNT } from "@/lib/editions";
  * worth showing. It just never gets to veto the download.
  */
 const PaymentSuccess = () => {
+  useNoindex();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const sessionId = params.get("session_id") ?? undefined;

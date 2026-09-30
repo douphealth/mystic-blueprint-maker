@@ -35,7 +35,7 @@ const GuidedIntake = ({ onComplete, initialName = "", notice }: GuidedIntakeProp
   }, [initialName]);
 
   const totalSteps = 2;
-  const progress = ((step + 1) / (totalSteps + 1)) * 100;
+  const progress = ((step + 1) / totalSteps) * 100;
 
   const handleNameSubmit = () => {
     if (!name.trim()) { setError("Please enter your full birth name"); return; }

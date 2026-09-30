@@ -44,3 +44,21 @@ export function parseIsoDateLocal(iso: string): Date | null {
 
   return date;
 }
+
+/**
+ * The inverse of `parseIsoDateLocal`: format a Date as `YYYY-MM-DD` using its
+ * *local* calendar fields.
+ *
+ * Never use `date.toISOString().split("T")[0]` for a birth date. A date built
+ * at local midnight is a different instant in UTC — for a visitor east of UTC
+ * (most of Europe, Asia and Oceania) `toISOString()` reports the *previous*
+ * day, so a saved 15 May came back as 14 May. Combined with reading it back
+ * through `new Date("YYYY-MM-DD")` (UTC midnight), the error hit every
+ * visitor not sitting exactly on UTC — in opposite directions on either side.
+ */
+export function formatIsoDateLocal(date: Date): string {
+  const year = String(date.getFullYear()).padStart(4, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}

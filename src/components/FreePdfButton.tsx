@@ -75,7 +75,7 @@ const FreePdfButton = ({ profile, name, autoDownload }: FreePdfButtonProps) => {
         {generating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating Your Workbook…</> : done ? <><CheckCircle className="w-4 h-4 mr-2" />Downloaded</> : <><Download className="w-4 h-4 mr-2" />Download Free Blueprint PDF</>}
       </Button>
       <div className="mt-3 flex items-center justify-center gap-2 text-[10px] text-muted-foreground/60 font-ui tracking-wide">
-        <FileText className="w-3 h-3" /> Generated privately in your browser — your details never leave this page.
+        <FileText className="w-3 h-3" /> The PDF is built in your browser — nothing is uploaded to create it.
       </div>
     </motion.div>
   );

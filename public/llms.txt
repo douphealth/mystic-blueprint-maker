@@ -1,0 +1,24 @@
+# Mystical Digits Life Path Blueprint
+
+> A free numerology calculator from Mystical Digits (https://mysticaldigits.com/). Enter a full birth name and a birth date to get six core numbers with written interpretations: Life Path, Destiny (Expression), Soul Urge, Personality, Birthday and Personal Year. Numerology here is a reflection framework for self-exploration and entertainment, not prediction, and not medical, legal, financial or relationship advice.
+
+## What you get
+
+- Free: all six core numbers, an interpretation of each, an energy signature, a number constellation, hidden passion and karmic debt (where the name or birth date calls for it), a 12-month energy map for the current year, and a printable 19-page PDF.
+- Premium Edition: a one-time $7.99 purchase for a 60+ page printable PDF built from the same name and birth date, adding shadow patterns, a relationship map, pinnacles and challenges, career and money settings, personal lucky codes and a 90-day operating system.
+- Privacy: the numbers and both PDFs are calculated in the visitor's browser. The email step asks for an email address, plus the name and birth date used for the reading, so the follow-up emails can link back to it.
+
+## Method
+
+- Pythagorean letter values A=1 ... I=9, J=1 ... R=9, S=1 ... Z=8.
+- Life Path: reduce month, day and year separately, add them, then reduce again. Master Numbers 11, 22 and 33 are kept.
+- Destiny: all letters of the full birth name. Soul Urge: the vowels. Personality: the consonants.
+- Birthday: the day of the month, reduced. Personal Year: birth month + birth day + the current year, reduced.
+- Karmic debt is flagged when a total passes through 13, 14, 16 or 19 on its way to a single digit.
+
+## Explanations on the main site
+
+- [Life Path calculator and formula](https://mysticaldigits.com/life-path-number-calculator/)
+- [All numerology calculators](https://mysticaldigits.com/numerology-calculators/)
+- [Life Path number meanings](https://mysticaldigits.com/life-path-numbers/)
+- [Free numerology blueprint](https://mysticaldigits.com/free-numerology-blueprint/)

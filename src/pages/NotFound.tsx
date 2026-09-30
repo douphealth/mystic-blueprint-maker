@@ -1,7 +1,9 @@
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { useNoindex } from "@/hooks/useNoindex";
 
 const NotFound = () => {
+  useNoindex();
   const location = useLocation();
 
   useEffect(() => {

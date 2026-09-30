@@ -2,8 +2,10 @@ import { motion } from "framer-motion";
 import { XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useNoindex } from "@/hooks/useNoindex";
 
 const PaymentCanceled = () => {
+  useNoindex();
   const navigate = useNavigate();
 
   return (

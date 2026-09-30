@@ -33,6 +33,8 @@
 // implied.
 // ---------------------------------------------------------------------------
 
+import { formatIsoDateLocal, parseIsoDateLocal } from "./localDate";
+
 const PROFILE_KEY = "md:blueprint-profile";
 const PREMIUM_KEY = "md:premium-unlocked";
 const EMAIL_KEY = "md:buyer-email";
@@ -66,7 +68,7 @@ export function saveProfile(name: string, dob: Date): void {
   if (!name || Number.isNaN(dob.getTime())) return;
   const payload: StoredProfile = {
     name: name.trim(),
-    dob: dob.toISOString().split("T")[0],
+    dob: formatIsoDateLocal(dob),
     savedAt: new Date().toISOString(),
   };
   safeSet(PROFILE_KEY, JSON.stringify(payload));
@@ -78,8 +80,7 @@ export function loadProfile(): StoredProfile | null {
   try {
     const parsed = JSON.parse(raw) as Partial<StoredProfile>;
     if (!parsed.name || !parsed.dob) return null;
-    const dob = new Date(parsed.dob);
-    if (Number.isNaN(dob.getTime())) return null;
+    if (!parseIsoDateLocal(parsed.dob)) return null;
     return { name: parsed.name, dob: parsed.dob, savedAt: parsed.savedAt ?? "" };
   } catch {
     return null;
@@ -89,8 +90,9 @@ export function loadProfile(): StoredProfile | null {
 export function loadProfileAsDate(): { name: string; dob: Date } | null {
   const stored = loadProfile();
   if (!stored) return null;
-  const dob = new Date(stored.dob);
-  if (Number.isNaN(dob.getTime())) return null;
+  // Local midnight, so getDate() answers with the day that was saved.
+  const dob = parseIsoDateLocal(stored.dob);
+  if (!dob) return null;
   return { name: stored.name, dob };
 }
 
