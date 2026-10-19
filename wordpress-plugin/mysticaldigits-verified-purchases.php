@@ -257,18 +257,35 @@ function mdx2_request_rate(string $key, int $max, int $ttl): bool {
 }
 
 function mdx2_purchase_for_email(string $email) {
-    $sessions = mdx2_stripe('GET', '/checkout/sessions', [
-        'customer_details[email]' => $email,
+    // Stripe Checkout Sessions cannot be listed with a customer_details[email]
+    // filter. Locate verified Customers by email, then inspect their Sessions.
+    // Never turn a Stripe API error into a false "no purchase" result.
+    $customers = mdx2_stripe('GET', '/customers', [
+        'email' => $email,
         'limit' => 100,
     ]);
-    if (is_wp_error($sessions)) return $sessions;
-    foreach (($sessions['data'] ?? []) as $s) {
-        $sid = (string) ($s['id'] ?? '');
-        if (!mdx2_valid_session_id($sid)) continue;
-        $found = mdx2_verified_session($sid);
-        if (is_wp_error($found)) continue;
-        $buyer = strtolower((string) ($found['customer_details']['email'] ?? $found['customer_email'] ?? ''));
-        if (hash_equals($email, $buyer)) return $found;
+    if (is_wp_error($customers)) return $customers;
+    foreach (($customers['data'] ?? []) as $customer) {
+        $customer_id = (string) ($customer['id'] ?? '');
+        if (!preg_match('/^cus_[A-Za-z0-9]+$/D', $customer_id)) continue;
+        $cursor = '';
+        for ($page = 0; $page < 10; $page++) {
+            $params = ['customer' => $customer_id, 'limit' => 100];
+            if ($cursor !== '') $params['starting_after'] = $cursor;
+            $sessions = mdx2_stripe('GET', '/checkout/sessions', $params);
+            if (is_wp_error($sessions)) return $sessions;
+            foreach (($sessions['data'] ?? []) as $session) {
+                $sid = (string) ($session['id'] ?? '');
+                if (!mdx2_valid_session_id($sid)) continue;
+                $found = mdx2_verified_session($sid);
+                if (is_wp_error($found)) continue;
+                $buyer = strtolower((string) ($found['customer_details']['email'] ?? $found['customer_email'] ?? ''));
+                if (hash_equals($email, $buyer)) return $found;
+            }
+            $data = $sessions['data'] ?? [];
+            if (empty($sessions['has_more']) || !$data) break;
+            $cursor = (string) end($data)['id'];
+        }
     }
     return null;
 }
