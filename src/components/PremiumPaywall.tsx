@@ -38,7 +38,7 @@ const PremiumPaywall = ({ email, onUnlocked }: PremiumPaywallProps) => {
       // Stripe payment link, so this no longer surfaces a raw network error
       // when the edge function is unreachable.
       const { url } = await startCheckout(email);
-      window.open(url, "_blank");
+      window.location.assign(url);
     } catch (err: unknown) {
       toast({
         title: "Payment error",
