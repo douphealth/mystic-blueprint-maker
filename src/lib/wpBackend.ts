@@ -78,6 +78,7 @@ async function wpPost<T>(path: string, body: unknown, timeoutMs: number): Promis
 
 export interface WpVerifyPayload {
   entitled?: boolean;
+  verified?: boolean;
   email?: string;
   reason?: string;
   inconclusive?: boolean;
