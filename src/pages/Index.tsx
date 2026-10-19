@@ -337,7 +337,7 @@ const Index = () => {
               isPremiumUnlocked() is read on mount so that landing back here
               after checkout shows the artifact instead of a second upsell. */}
           {premiumUnlocked ? (
-            <PremiumPdfButton profile={profile} name={userName} />
+            <PremiumPdfButton profile={profile} name={userName} dob={userDob ? [userDob.getFullYear(), String(userDob.getMonth() + 1).padStart(2, "0"), String(userDob.getDate()).padStart(2, "0")].join("-") : ""} />
           ) : (
             <PremiumPaywall email={userEmail} onUnlocked={() => { void resolveEntitlement().then(result => setPremiumUnlocked(result.entitled)); }} />
           )}
