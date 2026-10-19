@@ -35,9 +35,7 @@ const PremiumPdfButton = ({ profile, name, dob, autoDownload }: PremiumPdfButton
     // let the button repaint into its loading state before blocking the thread
     await new Promise((r) => setTimeout(r, 300));
 
-    try {
-      // Request the private PDF. This route must enforce purchase authentication
-    // and generate the report on the server; never ship the premium generator.
+    // The private endpoint must verify the purchase before rendering.
     try {
       const response = await fetch("https://mysticaldigits.com/wp-json/mdx/v2/premium-pdf", {
         method: "POST",
