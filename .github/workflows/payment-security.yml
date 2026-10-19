@@ -25,5 +25,12 @@ jobs:
         run: npm test -- --run
       - name: Production build
         run: npm run build
+      - name: Build private PDF renderer
+        run: npm run build:pdf-server
+      - name: Confirm premium source excluded from public build
+        run: |
+          ! grep -R "premiumInnerArchitecture" dist
+          ! grep -R "premiumShadowAnalysis" dist
+          ! grep -R "premiumLifePhaseMap" dist
       - name: WordPress plugin syntax
         run: php -l wordpress-plugin/mysticaldigits-verified-purchases.php
