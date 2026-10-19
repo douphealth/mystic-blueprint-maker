@@ -60,6 +60,7 @@ add_action('rest_api_init', static function () {
         '/request-restore' => 'mdx2_request_restore',
         '/complete-restore' => 'mdx2_complete_restore',
         '/stripe-webhook' => 'mdx2_stripe_webhook',
+        '/premium-pdf' => 'mdx2_premium_pdf',
     ];
     foreach ($routes as $route => $callback) {
         register_rest_route('mdx/v2', $route, [
@@ -228,6 +229,7 @@ function mdx2_create_payment(WP_REST_Request $req) {
     }
     $args = [
         'mode' => 'payment',
+        'customer_creation' => 'always',
         'line_items[0][price]' => $price_id,
         'line_items[0][quantity]' => 1,
         'success_url' => MDX2_ORIGIN . '/payment-success?session_id={CHECKOUT_SESSION_ID}',
@@ -398,4 +400,62 @@ function mdx2_stripe_webhook(WP_REST_Request $req) {
     // therefore invalidate access without trusting an asynchronous local flag.
     add_option($event_key, $type, '', false);
     return new WP_REST_Response(['received' => true], 200);
+}
+
+/**
+ * Secure PDF delivery: verify the signed browser cookie and live Stripe state
+ * before calling the private renderer. No frontend-provided profile/entitlement
+ * is trusted. MDX2_PDF_SHARED_SECRET and MDX2_PDF_RENDERER_URL must be stored
+ * as wp-config constants, never in frontend JS or repository files.
+ */
+function mdx2_premium_pdf(WP_REST_Request $req) {
+    $allowed = mdx2_origin_allowed($req);
+    if (is_wp_error($allowed)) return $allowed;
+    $sid = mdx2_cookie_session();
+    if (!$sid) return new WP_Error('mdx_unauthenticated', 'Verify your purchase to download.', ['status' => 401]);
+    $session = mdx2_verified_session($sid);
+    if (is_wp_error($session)) return $session;
+    $name = trim((string) $req->get_param('name'));
+    $dob = trim((string) $req->get_param('dob'));
+    if (!$name || strlen($name) > 120 || !preg_match('/^\\d{4}-\\d{2}-\\d{2}$/D', $dob)) {
+        return new WP_Error('mdx_invalid_profile', 'Enter your name and date of birth.', ['status' => 400]);
+    }
+    // Limit server-side PDF generation to prevent abuse and excessive CPU work.
+    $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+    if (!mdx2_request_rate('mdx2_pdf_' . substr(hash_hmac('sha256', $sid . '|' . $ip, wp_salt('auth')), 0, 32), 15, HOUR_IN_SECONDS)) {
+        return new WP_Error('mdx_pdf_rate', 'Too many downloads. Try again later.', ['status' => 429]);
+    }
+    $renderer = mdx2_setting('MDX2_PDF_RENDERER_URL');
+    $secret = mdx2_setting('MDX2_PDF_SHARED_SECRET');
+    if (!str_starts_with($renderer, 'http://127.0.0.1:') || strlen($secret) < 32) {
+        return new WP_Error('mdx_renderer_not_configured', 'Secure PDF delivery is temporarily unavailable.', ['status' => 503]);
+    }
+    $payload = wp_json_encode(['name' => $name, 'dob' => $dob]);
+    $stamp = (string) time();
+    $sig = hash_hmac('sha256', $stamp . '.' . $payload, $secret);
+    $response = wp_remote_post($renderer . '/internal/render-premium-pdf', [
+        'timeout' => 45,
+        'redirection' => 0,
+        'sslverify' => true,
+        'headers' => [
+            'Content-Type' => 'application/json',
+            'X-MDX2-Timestamp' => $stamp,
+            'X-MDX2-Signature' => $sig,
+        ],
+        'body' => $payload,
+    ]);
+    if (is_wp_error($response) || (int) wp_remote_retrieve_response_code($response) !== 200) {
+        return new WP_Error('mdx_render_failed', 'PDF generation is temporarily unavailable.', ['status' => 503]);
+    }
+    $pdf = (string) wp_remote_retrieve_body($response);
+    if (strlen($pdf) < 4000 || substr($pdf, 0, 5) !== '%PDF-') {
+        return new WP_Error('mdx_bad_pdf', 'PDF generation returned an invalid document.', ['status' => 503]);
+    }
+    status_header(200);
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: attachment; filename="mysticaldigits-premium-blueprint.pdf"');
+    header('Content-Length: ' . strlen($pdf));
+    header('Cache-Control: private, no-store');
+    echo $pdf; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- binary PDF
+    exit;
 }
