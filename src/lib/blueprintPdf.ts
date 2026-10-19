@@ -1,6 +1,9 @@
 import jsPDF from "jspdf";
+import { type NumerologyProfile } from "@/lib/numerology";
+import { getInterpretation, birthdayInterpretations } from "@/lib/interpretations";
+import { PDF_FONTS, FONT } from "@/lib/pdfFonts";
 
-/** Which edition to build. The premium edition is a strict superset. */
+/** Public PDF generator: the free edition only. Premium is private server-side. */
 export type BlueprintTier = "free";
 
 export interface BlueprintOptions {
