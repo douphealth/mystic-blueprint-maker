@@ -234,6 +234,7 @@ function mdx2_create_payment(WP_REST_Request $req) {
         'cancel_url' => MDX2_ORIGIN . '/payment-canceled',
         'client_reference_id' => 'mdx_premium_blueprint',
         'metadata[app]' => 'mysticaldigits-blueprint',
+        'payment_intent_data[metadata][app]' => 'mysticaldigits-blueprint',
     ];
     if ($email) $args['customer_email'] = $email;
     $session = mdx2_stripe('POST', '/checkout/sessions', $args);
@@ -305,6 +306,7 @@ function mdx2_request_restore(WP_REST_Request $req) {
     $challenge = bin2hex(random_bytes(16));
     $code = (string) random_int(10000000, 99999999);
     $session = mdx2_purchase_for_email($email);
+    if (is_wp_error($session)) return $session;
     // The same response is returned whether a paid account exists or not.
     $sid = is_array($session) ? (string) $session['id'] : '';
     set_transient('mdx2_otp_' . $challenge, [
