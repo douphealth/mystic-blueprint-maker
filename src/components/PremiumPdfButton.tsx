@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import { Download, FileText, Loader2, CheckCircle, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { type NumerologyProfile } from "@/lib/numerology";
-import { loadProfile } from "@/lib/entitlement";
 import { PREMIUM_PAGE_COUNT, blueprintSlug } from "@/lib/editions";
 import { useToast } from "@/hooks/use-toast";
 
@@ -13,6 +12,7 @@ export const premiumFileName = (name: string) =>
 interface PremiumPdfButtonProps {
   profile: NumerologyProfile;
   name: string;
+  dob: string;
   /** start the download as soon as the component mounts */
   autoDownload?: boolean;
 }
@@ -24,7 +24,7 @@ interface PremiumPdfButtonProps {
  * existed, a paying customer landed on /payment-success and had nothing to
  * download.
  */
-const PremiumPdfButton = ({ profile, name, autoDownload }: PremiumPdfButtonProps) => {
+const PremiumPdfButton = ({ profile, name, dob, autoDownload }: PremiumPdfButtonProps) => {
   const [generating, setGenerating] = useState(false);
   const [done, setDone] = useState(false);
   const { toast } = useToast();
@@ -44,7 +44,7 @@ const PremiumPdfButton = ({ profile, name, autoDownload }: PremiumPdfButtonProps
         credentials: "include",
         cache: "no-store",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, dob: loadProfile()?.dob }),
+        body: JSON.stringify({ name, dob }),
       });
       if (!response.ok || !response.headers.get("content-type")?.includes("application/pdf")) {
         throw new Error("Secure PDF delivery is temporarily unavailable. Please verify your purchase and retry.");
