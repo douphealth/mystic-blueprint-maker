@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Download, FileText, Loader2, CheckCircle, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { type NumerologyProfile } from "@/lib/numerology";
+import { loadProfile } from "@/lib/entitlement";
 import { PREMIUM_PAGE_COUNT, blueprintSlug } from "@/lib/editions";
 import { useToast } from "@/hooks/use-toast";
 
@@ -43,10 +44,10 @@ const PremiumPdfButton = ({ profile, name, autoDownload }: PremiumPdfButtonProps
         credentials: "include",
         cache: "no-store",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, profile }),
+        body: JSON.stringify({ name, dob: loadProfile()?.dob }),
       });
       if (!response.ok || !response.headers.get("content-type")?.includes("application/pdf")) {
-        throw new Error("Secure PDF delivery is not yet available. Your purchase remains valid; please retry later.");
+        throw new Error("Secure PDF delivery is temporarily unavailable. Please verify your purchase and retry.");
       }
       const file = await response.blob();
       const fileUrl = URL.createObjectURL(file);
