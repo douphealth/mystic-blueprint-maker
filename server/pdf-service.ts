@@ -59,7 +59,7 @@ createServer(async (req, res) => {
     });
     return res.end(bytes);
   } catch (err) {
-    console.error("Premium rendering failed:", err instanceof Error ? err.name : "unknown");
+    console.error("Premium rendering failed:", err instanceof Error ? `${err.name}: ${err.message}` : "unknown");
     res.writeHead(400); return res.end();
   }
 }).listen(port, "127.0.0.1", () => { console.log("Private PDF renderer ready on loopback"); });
