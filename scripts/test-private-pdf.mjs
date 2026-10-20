@@ -35,7 +35,7 @@ test("private renderer fails closed then delivers a personalized PDF with valid 
     r = await request(JSON.stringify({name:"Amara Nightingale", dob:"1990-13-41"}));
     assert.equal(r.status, 400, "invalid birth date cannot render");
     r = await request(JSON.stringify({name:"Amara Nightingale", dob:"1990-05-15"}));
-    assert.equal(r.status, 200);
+    assert.equal(r.status, 200, "render failure: " + errors);
     assert.match(r.headers.get("content-type") ?? "", /application\/pdf/);
     assert.match(r.headers.get("cache-control") ?? "", /no-store/);
     const bytes = Buffer.from(await r.arrayBuffer());
