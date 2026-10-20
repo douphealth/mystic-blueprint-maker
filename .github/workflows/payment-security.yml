@@ -27,6 +27,8 @@ jobs:
         run: npm run build
       - name: Build private PDF renderer
         run: npm run build:pdf-server
+      - name: Private renderer integration test
+        run: node --test scripts/test-private-pdf.mjs
       - name: Confirm premium source excluded from public build
         run: |
           ! grep -R "premiumInnerArchitecture" dist
