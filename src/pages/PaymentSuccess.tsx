@@ -4,35 +4,16 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle, Sparkles, ShieldCheck, Loader2, ArrowRight, MailQuestion } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PremiumDelivery from "@/components/PremiumDelivery";
-import { resolveEntitlement, loadBuyerEmail, type Entitlement } from "@/lib/entitlement";
+import { resolveEntitlement, type Entitlement } from "@/lib/entitlement";
 import { PREMIUM_PAGE_COUNT } from "@/lib/editions";
 
-/**
- * Where Stripe's success_url lands.
- *
- * This page has one job: hand over the thing that was paid for. It previously
- * did not — it congratulated the buyer and sent them back to a homepage that
- * still showed the paywall.
- *
- * Two rules govern everything here:
- *
- *   1. Delivery never waits on the network. The PDF is generated in the
- *      browser, so the entitlement check is an enhancement, not a dependency.
- *   2. Arriving on this URL is itself evidence of payment. Only Stripe
- *      redirects a browser here, and the production checkout is a payment link
- *      that does not reliably carry a session id — so requiring one would mean
- *      a buyer who paid in a fresh browser gets nothing.
- *
- * The check runs anyway, because a verified purchase is worth recording and
- * worth showing. It just never gets to veto the download.
- */
+/** Payment completion is only claimed after backend verification. */
 const PaymentSuccess = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const sessionId = params.get("session_id") ?? undefined;
 
   const [entitlement, setEntitlement] = useState<Entitlement | null>(null);
-  const email = loadBuyerEmail();
 
   useEffect(() => {
     let active = true;
@@ -43,7 +24,7 @@ const PaymentSuccess = () => {
     const started = Date.now();
     const MIN_VISIBLE_MS = 600;
 
-    resolveEntitlement({ sessionId, email: email ?? undefined, trustRedirect: true })
+    resolveEntitlement({ sessionId })
       .then(async (result) => {
         const elapsed = Date.now() - started;
         if (elapsed < MIN_VISIBLE_MS) {
@@ -52,16 +33,7 @@ const PaymentSuccess = () => {
         if (active) setEntitlement(result);
       })
       .catch(() => {
-        // resolveEntitlement is written not to throw; this is belt and braces
-        // so an unexpected failure still cannot strand a paying customer.
-        if (active) {
-          setEntitlement({
-            entitled: true,
-            source: "stripe-redirect",
-            email: email ?? undefined,
-            unverified: true,
-          });
-        }
+        if (active) setEntitlement({ entitled: false, source: "none", inconclusive: true });
       });
 
     return () => {
@@ -103,7 +75,7 @@ const PaymentSuccess = () => {
 
         {entitlement.entitled ? (
           <>
-            <h1 className="font-display text-3xl text-gradient-gold mb-3">Payment received</h1>
+            <h1 className="font-display text-3xl text-gradient-gold mb-3">Purchase verified</h1>
             <div className="flex items-center justify-center gap-2 mb-4">
               <Sparkles className="w-4 h-4 text-primary" />
               <p className="font-body text-foreground/60">Thank you — your Premium Edition is unlocked</p>
@@ -118,7 +90,7 @@ const PaymentSuccess = () => {
               </p>
             ) : (
               <p className="font-ui text-[11px] text-muted-foreground mb-6">
-                Your payment is confirmed
+                Purchase verified by Stripe
                 {entitlement.email ? <span className="text-muted-foreground/60"> · {entitlement.email}</span> : null}
               </p>
             )}
@@ -134,7 +106,7 @@ const PaymentSuccess = () => {
           <>
             <h1 className="font-display text-3xl text-gradient-gold mb-3">We couldn't confirm a purchase</h1>
             <p className="font-body text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-              If you paid with a different email address, you can restore it from your reading page. If you think this
+              If you purchased, return to your reading to request a verification code sent to your checkout email. If this
               is a mistake, reply to your Stripe receipt and we'll sort it out.
             </p>
             <Button

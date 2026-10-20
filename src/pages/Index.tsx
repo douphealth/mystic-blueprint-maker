@@ -15,7 +15,7 @@ import PremiumPdfButton from "@/components/PremiumPdfButton";
 import FloatingParticles from "@/components/FloatingParticles";
 import { calculateFullProfile, type NumerologyProfile } from "@/lib/numerology";
 import { getInterpretationSafe, birthdayInterpretations } from "@/lib/interpretations";
-import { saveProfile, saveBuyerEmail, loadBuyerEmail, isPremiumUnlocked, resolveEntitlement } from "@/lib/entitlement";
+import { saveProfile, saveBuyerEmail, loadBuyerEmail, resolveEntitlement } from "@/lib/entitlement";
 import { parseIsoDateLocal } from "@/lib/localDate";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -41,12 +41,17 @@ const Index = () => {
   const [autoDownload, setAutoDownload] = useState(false);
   // read once on mount — if this visitor already bought the Premium Edition,
   // the results page should offer the download rather than the paywall again
-  const [premiumUnlocked, setPremiumUnlocked] = useState(() => isPremiumUnlocked());
+  const [premiumUnlocked, setPremiumUnlocked] = useState(false);
 
-  // re-check when the results screen appears, in case checkout completed in
-  // another tab while this one stayed open
+  // Re-validate an existing signed session with Stripe whenever results become visible.
   useEffect(() => {
-    if (phase === "results") setPremiumUnlocked(isPremiumUnlocked());
+    if (phase !== "results") return;
+    let active = true;
+    setPremiumUnlocked(false);
+    void resolveEntitlement().then(result => {
+      if (active) setPremiumUnlocked(result.entitled);
+    }).catch(() => { if (active) setPremiumUnlocked(false); });
+    return () => { active = false; };
   }, [phase]);
 
   // Auto-advance past email gate if user becomes authenticated
@@ -332,9 +337,9 @@ const Index = () => {
               isPremiumUnlocked() is read on mount so that landing back here
               after checkout shows the artifact instead of a second upsell. */}
           {premiumUnlocked ? (
-            <PremiumPdfButton profile={profile} name={userName} />
+            <PremiumPdfButton profile={profile} name={userName} dob={userDob ? [userDob.getFullYear(), String(userDob.getMonth() + 1).padStart(2, "0"), String(userDob.getDate()).padStart(2, "0")].join("-") : ""} />
           ) : (
-            <PremiumPaywall email={userEmail} onUnlocked={() => setPremiumUnlocked(true)} />
+            <PremiumPaywall email={userEmail} onUnlocked={() => { void resolveEntitlement().then(result => setPremiumUnlocked(result.entitled)); }} />
           )}
 
           {/* Footer */}

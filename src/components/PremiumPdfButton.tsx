@@ -12,6 +12,7 @@ export const premiumFileName = (name: string) =>
 interface PremiumPdfButtonProps {
   profile: NumerologyProfile;
   name: string;
+  dob: string;
   /** start the download as soon as the component mounts */
   autoDownload?: boolean;
 }
@@ -23,7 +24,7 @@ interface PremiumPdfButtonProps {
  * existed, a paying customer landed on /payment-success and had nothing to
  * download.
  */
-const PremiumPdfButton = ({ profile, name, autoDownload }: PremiumPdfButtonProps) => {
+const PremiumPdfButton = ({ profile, name, dob, autoDownload }: PremiumPdfButtonProps) => {
   const [generating, setGenerating] = useState(false);
   const [done, setDone] = useState(false);
   const { toast } = useToast();
@@ -34,11 +35,30 @@ const PremiumPdfButton = ({ profile, name, autoDownload }: PremiumPdfButtonProps
     // let the button repaint into its loading state before blocking the thread
     await new Promise((r) => setTimeout(r, 300));
 
+    // The private endpoint must verify the purchase before rendering.
     try {
-      // ~60 pages of vector content, so the generator is loaded on demand
-      const { generateBlueprintPdf } = await import("@/lib/blueprintPdf");
-      const doc = generateBlueprintPdf(profile, name, { tier: "premium" });
-      doc.save(premiumFileName(name));
+      const response = await fetch("https://mysticaldigits.com/wp-json/mdx/v2/premium-pdf", {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, dob }),
+      });
+      if (!response.ok || !response.headers.get("content-type")?.includes("application/pdf")) {
+        throw new Error("Secure PDF delivery is temporarily unavailable. Please verify your purchase and retry.");
+      }
+      const file = await response.blob();
+      const fileUrl = URL.createObjectURL(file);
+      try {
+        const link = document.createElement("a");
+        link.href = fileUrl;
+        link.download = premiumFileName(name);
+        document.body.append(link);
+        link.click();
+        link.remove();
+      } finally {
+        window.setTimeout(() => URL.revokeObjectURL(fileUrl), 60_000);
+      }
       setDone(true);
       setTimeout(() => setDone(false), 3000);
     } catch (err: unknown) {
@@ -103,7 +123,7 @@ const PremiumPdfButton = ({ profile, name, autoDownload }: PremiumPdfButtonProps
         )}
       </Button>
       <div className="mt-3 flex items-center justify-center gap-2 text-[10px] text-muted-foreground/60 font-ui tracking-wide">
-        <FileText className="w-3 h-3" /> Generated in your browser — download it again any time from this page.
+        <FileText className="w-3 h-3" /> Securely delivered after purchase verification.
       </div>
     </motion.div>
   );

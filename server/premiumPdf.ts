@@ -12,7 +12,7 @@
 // ---------------------------------------------------------------------------
 
 import type jsPDF from "jspdf";
-import type { NumerologyProfile } from "./numerology";
+import type { NumerologyProfile } from "../src/lib/numerology";
 import {
   shadowProfiles,
   relationshipSignatures,

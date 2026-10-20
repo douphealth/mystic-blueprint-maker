@@ -1,0 +1,38 @@
+name: Payment security verification
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  security-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Ensure unauthorized premium fallbacks do not return
+        run: |
+          ! grep -R 'trustRedirect: true' src/pages src/components src/lib
+          ! grep -R 'setItem.*md:premium-unlocked' src/pages src/components src/lib
+          ! grep -R 'STRIPE_PAYMENT_LINK' src/pages src/components src/lib
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm test -- --run
+      - name: Production build
+        run: npm run build
+      - name: Build private PDF renderer
+        run: npm run build:pdf-server
+      - name: Private renderer integration test
+        run: node --test scripts/test-private-pdf.mjs
+      - name: Confirm premium source excluded from public build
+        run: |
+          ! grep -R "premiumInnerArchitecture" dist
+          ! grep -R "premiumShadowAnalysis" dist
+          ! grep -R "premiumLifePhaseMap" dist
+      - name: WordPress plugin syntax
+        run: php -l wordpress-plugin/mysticaldigits-verified-purchases.php

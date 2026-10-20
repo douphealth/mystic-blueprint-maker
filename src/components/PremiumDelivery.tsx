@@ -30,7 +30,7 @@ const PremiumDelivery = ({ autoDownload = true }: PremiumDeliveryProps) => {
   const [name, setName] = useState("");
   const [dob, setDob] = useState("");
   const [error, setError] = useState("");
-  const [manual, setManual] = useState<{ profile: NumerologyProfile; name: string } | null>(null);
+  const [manual, setManual] = useState<{ profile: NumerologyProfile; name: string; dob: string } | null>(null);
 
   const stored = useMemo(() => loadProfileAsDate(), []);
   // Start on the form when storage has no profile, so the download button never
@@ -38,7 +38,7 @@ const PremiumDelivery = ({ autoDownload = true }: PremiumDeliveryProps) => {
   const [needsDetails, setNeedsDetails] = useState(() => stored === null);
 
   const ready = stored
-    ? { profile: calculateFullProfile(stored.name, stored.dob), name: stored.name }
+    ? { profile: calculateFullProfile(stored.name, stored.dob), name: stored.name, dob: stored.dob.toISOString().slice(0, 10) }
     : manual;
 
   const handleSubmit = () => {
@@ -53,12 +53,12 @@ const PremiumDelivery = ({ autoDownload = true }: PremiumDeliveryProps) => {
       return;
     }
     setError("");
-    setManual({ profile: calculateFullProfile(trimmed, parsed), name: trimmed });
+    setManual({ profile: calculateFullProfile(trimmed, parsed), name: trimmed, dob });
     setNeedsDetails(false);
   };
 
   if (ready) {
-    return <PremiumPdfButton profile={ready.profile} name={ready.name} autoDownload={autoDownload} />;
+    return <PremiumPdfButton profile={ready.profile} name={ready.name} dob={ready.dob} autoDownload={autoDownload} />;
   }
 
   if (!needsDetails) return null;

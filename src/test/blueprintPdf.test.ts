@@ -4,7 +4,7 @@ import path from "path";
 import zlib from "zlib";
 import { generateBlueprintPdf } from "../lib/blueprintPdf";
 import { NumerologyProfile } from "../lib/numerology";
-import { FREE_PAGE_COUNT, PREMIUM_PAGE_COUNT } from "../lib/editions";
+
 
 /**
  * These tests exercise the REAL jsPDF engine (no mocks) so that font
@@ -136,52 +136,3 @@ describe("generateBlueprintPdf (real jsPDF)", () => {
   });
 });
 
-describe("premium tier (real jsPDF)", () => {
-  it("builds a substantially deeper edition and writes an inspectable sample", () => {
-    const free = generateBlueprintPdf(richProfile, "Amara Nightingale");
-    const premium = generateBlueprintPdf(richProfile, "Amara Nightingale", { tier: "premium" });
-
-    const freePages = free.getNumberOfPages();
-    const premiumPages = premium.getNumberOfPages();
-    const pdf = bytesOf(premium);
-    const raw = pdf.toString("latin1");
-
-    console.log(`\nfree pages: ${freePages}  ·  premium pages: ${premiumPages}`);
-
-    expect(raw.slice(0, 5)).toBe("%PDF-");
-    expect(raw.trimEnd().endsWith("%%EOF")).toBe(true);
-
-    // The premium edition must be a genuine superset, not a relabelling.
-    expect(premiumPages).toBe(PREMIUM_PAGE_COUNT);
-    expect(premiumPages).toBeGreaterThan(freePages + 20);
-
-    // every page is emitted
-    const pageObjects = (raw.match(/\/Type\s*\/Page[^s]/g) || []).length;
-    expect(pageObjects).toBe(premiumPages);
-
-    // brand fonts still embedded in the premium path
-    const fonts = inflatedStreams(pdf) + raw;
-    for (const family of ["Cinzel", "Cormorant", "Inter"]) {
-      expect(fonts).toContain(family);
-    }
-
-    fs.mkdirSync(QA_DIR, { recursive: true });
-    const out = path.join(QA_DIR, "premium-sample.pdf");
-    fs.writeFileSync(out, pdf);
-    expect(fs.statSync(out).size).toBeGreaterThan(250_000);
-  }, 120_000);
-
-  it("does not change the free edition when the tier is omitted", () => {
-    const a = bytesOf(generateBlueprintPdf(richProfile, "Amara Nightingale"));
-    const b = bytesOf(generateBlueprintPdf(richProfile, "Amara Nightingale", { tier: "free" }));
-    expect(a.length).toBe(b.length);
-  }, 60_000);
-
-  it("survives a sparse premium profile without throwing", () => {
-    const doc = generateBlueprintPdf(sparseProfile, "", { tier: "premium" });
-    const raw = bytesOf(doc).toString("latin1");
-    expect(raw.slice(0, 5)).toBe("%PDF-");
-    // no pinnacle or personal-month data, so the worksheet pages drop out
-    expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(50);
-  }, 120_000);
-});

@@ -2,23 +2,9 @@ import jsPDF from "jspdf";
 import { type NumerologyProfile } from "@/lib/numerology";
 import { getInterpretation, birthdayInterpretations } from "@/lib/interpretations";
 import { PDF_FONTS, FONT } from "@/lib/pdfFonts";
-import {
-  type PdfKit,
-  premiumInnerArchitecture,
-  premiumShadowAnalysis,
-  premiumRelationship,
-  premiumCareer,
-  premiumWealth,
-  premiumLuckyCodes,
-  premiumLifePhaseMap,
-  premiumGrowthPrompts,
-  premiumForecastDeep,
-  premiumOperatingSystem,
-  premiumJournals,
-} from "@/lib/premiumPdf";
 
-/** Which edition to build. The premium edition is a strict superset. */
-export type BlueprintTier = "free" | "premium";
+/** Public PDF generator: the free edition only. Premium is private server-side. */
+export type BlueprintTier = "free";
 
 export interface BlueprintOptions {
   tier?: BlueprintTier;
@@ -327,7 +313,7 @@ export function generateBlueprintPdf(
     name: string,
     options: BlueprintOptions = {},
 ): jsPDF {
-    const tier: BlueprintTier = options.tier ?? "free";
+    // The public bundle intentionally contains only the free edition.
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
 
     // ---- register embedded brand fonts -----------------------------------
@@ -1355,108 +1341,6 @@ export function generateBlueprintPdf(
       y += 3.2;
     });
     footer();
-
-    // =====================================================================
-    // PREMIUM EDITION
-    //
-    // Everything above this line is the free workbook. The premium edition is
-    // a strict superset: the same core reading, followed by roughly forty pages
-    // of depth across nine sections. Nothing above is altered, so the free
-    // edition stays byte-identical to what was verified.
-    // =====================================================================
-    if (tier === "premium") {
-      newPage("dark");
-      y = 88;
-      ornRule(70, GOLD);
-      y += 8;
-      font(FONT.ui, "bold", 6.4, GOLD, 2.0);
-      textAt("PREMIUM EDITION", PAGE_W / 2, y, "center");
-      y += 17;
-      font(FONT.display, "bold", 23, GOLD_LIGHT, 0.6);
-      textAt("THE DEEP", PAGE_W / 2, y, "center");
-      y += 11;
-      textAt("LAYER", PAGE_W / 2, y, "center");
-      y += 13;
-      ornRule(50, GOLD);
-      y += 13;
-      font(FONT.body, "normal", 11, PEARL, 0);
-      [
-        "Everything before this point describes what your numbers are.",
-        "Everything after it describes what to do about them.",
-      ].forEach((ln) => {
-        textAt(ln, PAGE_W / 2, y, "center");
-        y += 6.6;
-      });
-      y += 9;
-      font(FONT.body, "italic", 10, PEARL_DIM, 0);
-      [
-        "Nine sections follow — your inner architecture, deep shadow analysis,",
-        "the relationship map, career and purpose alignment, wealth and legacy,",
-        "personal codes, the full life phase map, growth prompts, a month-by-month",
-        "forecast, a personal operating system, and printable journals.",
-      ].forEach((ln) => {
-        textAt(ln, PAGE_W / 2, y, "center");
-        y += 5.8;
-      });
-      footer(true);
-
-      // The premium builders live in premiumPdf.ts. They receive this kit
-      // rather than importing the primitives, which keeps the dependency
-      // one-directional and avoids an import cycle.
-      const kit: PdfKit = {
-        doc,
-        PAGE_W,
-        PAGE_H,
-        M,
-        CW,
-        BOTTOM,
-        PT2MM,
-        FONT,
-        C: {
-          CREAM, CREAM_2, INK, INK_SOFT, INK_FAINT, GOLD, GOLD_DEEP,
-          GOLD_LIGHT, MIDNIGHT, PEARL, PEARL_DIM, RULE, RULE_SOFT, ROSE, PURPLE,
-        },
-        get y() {
-          return y;
-        },
-        set y(v: number) {
-          y = v;
-        },
-        font,
-        textAt,
-        para,
-        eyebrow,
-        h,
-        rule,
-        ornRule,
-        box,
-        medal,
-        fitText,
-        writeLines,
-        checkbox,
-        bullet,
-        compass,
-        newPage,
-        footer,
-        ensure,
-        fullPageTitle,
-        card,
-        monthlyFocus,
-        numberPrinciples,
-      };
-
-      premiumInnerArchitecture(kit, profile, cleanName);
-      premiumShadowAnalysis(kit, profile, cleanName);
-      premiumRelationship(kit, profile, cleanName);
-      premiumCareer(kit, profile, cleanName);
-      premiumWealth(kit, profile, cleanName);
-      premiumLuckyCodes(kit, profile, cleanName);
-      premiumLifePhaseMap(kit, profile, cleanName);
-      premiumGrowthPrompts(kit, profile, cleanName);
-      premiumForecastDeep(kit, profile, cleanName);
-      premiumOperatingSystem(kit, profile, cleanName);
-      premiumJournals(kit, profile, cleanName);
-    }
 
     // =====================================================================
     // CLOSING (dark)

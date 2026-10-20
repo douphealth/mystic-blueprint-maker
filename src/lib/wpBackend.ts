@@ -26,7 +26,7 @@
 // rather than "not entitled".
 // ---------------------------------------------------------------------------
 
-export const WP_API_BASE = "https://mysticaldigits.com/wp-json/mdx/v1";
+export const WP_API_BASE = "https://mysticaldigits.com/wp-json/mdx/v2";
 
 interface WpResponse<T> {
   data: T | null;
@@ -53,6 +53,7 @@ async function wpPost<T>(path: string, body: unknown, timeoutMs: number): Promis
       body: JSON.stringify(body ?? {}),
       signal: controller.signal,
       keepalive: true,
+      credentials: "include",
       // The entitlement store must never be served from an edge cache.
       cache: "no-store",
     });
@@ -77,6 +78,7 @@ async function wpPost<T>(path: string, body: unknown, timeoutMs: number): Promis
 
 export interface WpVerifyPayload {
   entitled?: boolean;
+  verified?: boolean;
   email?: string;
   reason?: string;
   inconclusive?: boolean;
@@ -91,7 +93,7 @@ export interface WpPaymentPayload {
 
 /** Ask whether a session or email is entitled. */
 export function wpVerifyEntitlement(
-  body: { session_id?: string; email?: string },
+  body: { session_id?: string },
   timeoutMs: number,
 ): Promise<WpResponse<WpVerifyPayload>> {
   return wpPost<WpVerifyPayload>("/verify-entitlement", body, timeoutMs);
@@ -103,4 +105,12 @@ export function wpCreatePayment(
   timeoutMs: number,
 ): Promise<WpResponse<WpPaymentPayload>> {
   return wpPost<WpPaymentPayload>("/create-payment", body, timeoutMs);
+}
+
+export interface RestoreRequestPayload { request_id?: string; message?: string }
+export function requestPurchaseRestore(email: string): Promise<WpResponse<RestoreRequestPayload>> {
+  return wpPost("/request-restore", { email }, 15000);
+}
+export function completePurchaseRestore(requestId: string, code: string): Promise<WpResponse<WpVerifyPayload>> {
+  return wpPost("/complete-restore", { request_id: requestId, code }, 15000);
 }
