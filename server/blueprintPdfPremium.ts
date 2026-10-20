@@ -1,4 +1,4 @@
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf";
 import { type NumerologyProfile } from "../src/lib/numerology";
 import { getInterpretation, birthdayInterpretations } from "../src/lib/interpretations";
 import { PDF_FONTS, FONT } from "../src/lib/pdfFonts";
