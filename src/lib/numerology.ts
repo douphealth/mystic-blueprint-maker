@@ -41,22 +41,30 @@ function lifePathTotal(dob: Date): number {
   return month + day + year;
 }
 
+// Upper-case A-Z letters of a name, with accents removed first. Without this,
+// "José" or "Zoë" silently lost the accented letter (É, Ë have no entry in
+// LETTER_VALUES), so Expression and Soul Urge came out wrong for anyone whose
+// name carries a diacritic.
+function nameLetters(name: string): string[] {
+  return name.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().split('');
+}
+
 // Sum of all letters in name
 function nameSum(name: string): number {
-  return name.toUpperCase().split('')
+  return nameLetters(name)
     .filter(c => LETTER_VALUES[c])
     .reduce((sum, c) => sum + LETTER_VALUES[c], 0);
 }
 
 // Sum of the vowels / consonants in a name (before any reduction)
 function vowelSum(name: string): number {
-  return name.toUpperCase().split('')
+  return nameLetters(name)
     .filter(c => VOWELS.has(c))
     .reduce((sum, c) => sum + (LETTER_VALUES[c] || 0), 0);
 }
 
 function consonantSum(name: string): number {
-  return name.toUpperCase().split('')
+  return nameLetters(name)
     .filter(c => LETTER_VALUES[c] && !VOWELS.has(c))
     .reduce((sum, c) => sum + LETTER_VALUES[c], 0);
 }
@@ -94,7 +102,7 @@ export function calculatePersonalYear(dob: Date, year: number): number {
 // Hidden Passion - most frequently occurring number in the name
 export function calculateHiddenPassion(fullName: string): number[] {
   const freq: Record<number, number> = {};
-  fullName.toUpperCase().split('').forEach(c => {
+  nameLetters(fullName).forEach(c => {
     const v = LETTER_VALUES[c];
     if (v) freq[v] = (freq[v] || 0) + 1;
   });

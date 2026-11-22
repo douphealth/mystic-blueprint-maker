@@ -204,6 +204,30 @@ describe("entitlement resolution", () => {
     expect(isPremiumUnlocked()).toBe(true);
   });
 
+  it("delivers on the success page even when the server has no record of the gate email", async () => {
+    // Live on 2026-11-22: a buyer whose address was saved landed on "We couldn't
+    // confirm a purchase", because the address lookup ran first and its "not
+    // found" (no webhook, or paid with another address) ended the resolution
+    // before the redirect was considered.
+    backendSays({ entitled: false, reason: "not_found" });
+    saveBuyerEmail("grace@example.com");
+
+    const result = await resolveEntitlement({ email: "grace@example.com", trustRedirect: true });
+
+    expect(result.entitled).toBe(true);
+    expect(result.source).toBe("stripe-redirect");
+    expect(result.email).toBe("grace@example.com");
+    expect(isPremiumUnlocked()).toBe(true);
+  });
+
+  it("still reports a verified purchase on the success page when the server has one", async () => {
+    backendSays({ entitled: true, email: "grace@example.com" });
+
+    const result = await resolveEntitlement({ email: "grace@example.com", trustRedirect: true });
+
+    expect(result.source).toBe("server");
+  });
+
   it("does not let the redirect trust leak into the restore path", async () => {
     // Same page, but the restore lookup must still be able to say no.
     backendSays({ entitled: false, reason: "not_found" });

@@ -86,3 +86,35 @@ describe("challenges and pinnacles", () => {
     expect(calculateChallenges(new Date(2025, 10, 20)).every((c) => c >= 0 && c <= 8)).toBe(true);
   });
 });
+
+// Worked examples checked by hand (and by an independent script), so the core
+// numbers are pinned to fixed answers rather than to the code's own output.
+describe("core numbers against worked examples", () => {
+  it("Grace Elizabeth Moore, 21 March 1985", () => {
+    const p = calculateFullProfile("Grace Elizabeth Moore", new Date(1985, 2, 21));
+    expect(p.lifePath).toBe(11); // 3 + 3 + (1985 -> 23 -> 5) = 11, kept as a Master Number
+    expect(p.expression).toBe(8); // letters 98 -> 17 -> 8
+    expect(p.soulUrge).toBe(7); // vowels 43 -> 7
+    expect(p.personality).toBe(1); // consonants 55 -> 10 -> 1
+    expect(p.birthday).toBe(3); // 21 -> 3
+    expect(p.hiddenPassion).toEqual([5]); // four E's
+    // No total passes through 13, 14, 16 or 19. The live build flagged 16 and
+    // 19 here, only because Soul Urge is 7 and Personality is 1.
+    expect(p.karmicDebt).toEqual([]);
+  });
+
+  it("keeps Life Path 22 and 33", () => {
+    expect(calculateFullProfile("A", new Date(1960, 3, 11)).lifePath).toBe(22); // 4 + 11 + 7
+    expect(calculateFullProfile("A", new Date(1960, 3, 22)).lifePath).toBe(33); // 4 + 22 + 7
+  });
+
+  it("counts accented letters instead of dropping them", () => {
+    const plain = calculateFullProfile("Jose Garcia", new Date(1990, 0, 1));
+    const accented = calculateFullProfile("José García", new Date(1990, 0, 1));
+    expect(plain.soulUrge).toBe(22); // O E A I A = 6+5+1+9+1, a Master Number
+    expect(accented.expression).toBe(plain.expression);
+    expect(accented.soulUrge).toBe(plain.soulUrge);
+    expect(accented.personality).toBe(plain.personality);
+    expect(accented.hiddenPassion).toEqual(plain.hiddenPassion);
+  });
+});

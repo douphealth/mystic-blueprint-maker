@@ -199,6 +199,17 @@ export async function resolveEntitlement(
       saveBuyerEmail(email);
       return { entitled: true, source: "server", email: result.email ?? email };
     }
+    // On the page Stripe redirects to, a server "no" for a known address is not
+    // evidence against the payment: the payment link carries no session id,
+    // the webhook may not have landed (or may not be configured), and the
+    // buyer may have paid with a different address than the one they gave the
+    // email gate. Checking the address first and then falling back to the
+    // redirect keeps a verified result when there is one, without ever letting
+    // the lookup veto a delivery the redirect would have made.
+    if (opts.trustRedirect) {
+      markPremiumUnlocked();
+      return { entitled: true, source: "stripe-redirect", email: knownEmail, unverified: true };
+    }
     // A definitive "no" from a reachable server still yields to a local flag:
     // the buyer may have purchased under a different address.
     if (locallyUnlocked) {

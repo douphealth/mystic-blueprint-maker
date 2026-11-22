@@ -37,7 +37,8 @@ const Index = () => {
   const [phase, setPhase] = useState<Phase>("landing");
   const [loadingStep, setLoadingStep] = useState(0);
   const [intakeNotice, setIntakeNotice] = useState("");
-  const [userEmail, setUserEmail] = useState("");
+  // A returning visitor's address, so checkout stays prefilled on a later visit.
+  const [userEmail, setUserEmail] = useState(() => loadBuyerEmail() ?? "");
   const [autoDownload, setAutoDownload] = useState(false);
   // read once on mount — if this visitor already bought the Premium Edition,
   // the results page should offer the download rather than the paywall again
@@ -70,7 +71,10 @@ const Index = () => {
     const decodedName = (nameParam ?? "").replace(/\+/g, " ").trim();
     const decodedDob = (dobParam ?? "").trim();
 
-    if (emailParam) setUserEmail(emailParam.trim());
+    if (emailParam?.trim()) {
+      setUserEmail(emailParam.trim());
+      saveBuyerEmail(emailParam.trim());
+    }
     if (downloadParam === "1") setAutoDownload(true);
 
     // Read as local midnight, the same way GuidedIntake does — see
@@ -110,7 +114,16 @@ const Index = () => {
     }
   };
 
-  const handleEmailComplete = (_email: string) => {
+  const handleEmailComplete = (email: string) => {
+    // Keep the address the visitor just gave us. Without it the paywall opened
+    // Stripe with an empty email field (no prefill), create-payment could not
+    // recognise an existing buyer and offer the restore link instead of a
+    // second charge, and /payment-success had no address to look up.
+    const trimmed = email.trim();
+    if (trimmed) {
+      setUserEmail(trimmed);
+      saveBuyerEmail(trimmed);
+    }
     if (userName && userDob) {
       startCalculation(userName, userDob);
     }
