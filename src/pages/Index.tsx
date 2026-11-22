@@ -65,6 +65,15 @@ const Index = () => {
     const emailParam = params.get("email");
     const downloadParam = params.get("download");
 
+    // create-payment sends an already-entitled buyer to /?restore=1&email=...
+    // instead of a second checkout. Confirm it with the server and unlock.
+    if (params.get("restore") === "1" && emailParam?.includes("@")) {
+      setUserEmail(emailParam.trim());
+      resolveEntitlement({ email: emailParam }).then((r) => {
+        if (r.entitled) setPremiumUnlocked(true);
+      });
+    }
+
     if (!nameParam && !dobParam) return;
 
     // Decode '+' as spaces

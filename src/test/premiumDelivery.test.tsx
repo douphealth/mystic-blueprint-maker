@@ -74,7 +74,14 @@ const backendDown = () => mockFetch.mockRejectedValue(new TypeError("Failed to f
 const backendSays = (payload: Record<string, unknown>) =>
   mockFetch.mockResolvedValue({ ok: true, status: 200, json: async () => payload });
 
-const renderAt = (ui: React.ReactElement) => render(<MemoryRouter>{ui}</MemoryRouter>);
+const renderAt = (ui: React.ReactElement, path = "/payment-success") =>
+  render(<MemoryRouter initialEntries={[path]}>{ui}</MemoryRouter>);
+
+/** Where Stripe sends a buyer: the success page with a real session id. */
+const PAID = "/payment-success?session_id=cs_live_paid123";
+
+/** The backend has the webhook row for this session. */
+const sessionConfirmed = () => backendSays({ entitled: true, email: "amara@example.com", source: "stripe_session" });
 
 describe("paid delivery", () => {
   beforeEach(() => {
@@ -98,8 +105,9 @@ describe("paid delivery", () => {
 
   it("hands the premium PDF to a buyer whose profile is still stored", async () => {
     saveProfile("Amara Nightingale", new Date(1990, 4, 15));
+    sessionConfirmed();
 
-    renderAt(<PaymentSuccess />);
+    renderAt(<PaymentSuccess />, PAID);
 
     // the download card is present...
     expect(await screen.findByText(/Premium Edition · Unlocked/i, {}, { timeout: 8000 })).toBeInTheDocument();
@@ -112,14 +120,16 @@ describe("paid delivery", () => {
 
   it("asks for the details again rather than delivering nothing", async () => {
     // no stored profile — different browser, or storage unavailable
-    renderAt(<PaymentSuccess />);
+    sessionConfirmed();
+    renderAt(<PaymentSuccess />, PAID);
 
     expect(await screen.findByText(/Full birth name/i)).toBeInTheDocument();
     expect(screen.queryByText(/Premium Edition · Unlocked/i)).not.toBeInTheDocument();
   });
 
   it("generates the premium edition from manually entered details", async () => {
-    const { container } = renderAt(<PaymentSuccess />);
+    sessionConfirmed();
+    const { container } = renderAt(<PaymentSuccess />, PAID);
 
     fireEvent.change(await screen.findByPlaceholderText(/birth certificate/i), {
       target: { value: "Amara Nightingale" },
@@ -134,9 +144,34 @@ describe("paid delivery", () => {
   });
 
   it("rejects an incomplete manual entry with a clear message", async () => {
-    renderAt(<PaymentSuccess />);
+    sessionConfirmed();
+    renderAt(<PaymentSuccess />, PAID);
     fireEvent.click(await screen.findByText(/Generate My Premium Edition/i, {}, { timeout: 8000 }));
     expect(await screen.findByText(/enter the full name/i)).toBeInTheDocument();
+    expect(mockSave).not.toHaveBeenCalled();
+  });
+
+  it("unlocks nothing when the page is opened without a session id", async () => {
+    saveProfile("Amara Nightingale", new Date(1990, 4, 15));
+    backendSays({ entitled: false, reason: "not_found" });
+
+    renderAt(<PaymentSuccess />, "/payment-success");
+
+    expect(await screen.findByText(/No purchase to confirm here/i, {}, { timeout: 8000 })).toBeInTheDocument();
+    expect(screen.queryByText(/Premium Edition · Unlocked/i)).not.toBeInTheDocument();
+    expect(isPremiumUnlocked()).toBe(false);
+    expect(mockSave).not.toHaveBeenCalled();
+  });
+
+  it("offers a retry, not the file, when the session cannot be confirmed", async () => {
+    saveProfile("Amara Nightingale", new Date(1990, 4, 15));
+    backendDown();
+
+    renderAt(<PaymentSuccess />, "/payment-success?session_id=cs_live_madeup");
+
+    expect(await screen.findByText(/Still confirming your payment/i, {}, { timeout: 8000 })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Check again/i })).toBeInTheDocument();
+    expect(isPremiumUnlocked()).toBe(false);
     expect(mockSave).not.toHaveBeenCalled();
   });
 

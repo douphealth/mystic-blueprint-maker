@@ -42,8 +42,10 @@ const CHECKOUT_TIMEOUT_MS = 4_000;
  * immediately and delivers the webhook alongside. A "not found" in the first
  * second is therefore not evidence of anything, so we re-ask a few times.
  */
-const VERIFY_ATTEMPTS = 4;
-const VERIFY_BACKOFF_MS = 900;
+// About 12 seconds in all. Stripe usually delivers the webhook within a few
+// seconds; past this the page offers "check again" instead of waiting longer.
+const VERIFY_ATTEMPTS = 8;
+const VERIFY_BACKOFF_MS = 1_500;
 
 export interface VerifyResult {
   entitled: boolean;

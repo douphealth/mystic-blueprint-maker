@@ -9,43 +9,37 @@ import { PREMIUM_PAGE_COUNT } from "@/lib/editions";
 import { useNoindex } from "@/hooks/useNoindex";
 
 /**
- * Where Stripe's success_url lands.
+ * Where Stripe's success_url lands:
+ *   /payment-success?session_id={CHECKOUT_SESSION_ID}
  *
- * This page has one job: hand over the thing that was paid for. It previously
- * did not — it congratulated the buyer and sent them back to a homepage that
- * still showed the paywall.
+ * Premium unlocks only when the backend confirms that session id, which it can
+ * do only because a signature-verified Stripe webhook recorded the paid
+ * session. Opening this URL by hand, or with a made-up id, unlocks nothing.
  *
- * Two rules govern everything here:
- *
- *   1. Delivery never waits on the network. The PDF is generated in the
- *      browser, so the entitlement check is an enhancement, not a dependency.
- *   2. Arriving on this URL is itself evidence of payment. Only Stripe
- *      redirects a browser here, and the production checkout is a payment link
- *      that does not reliably carry a session id — so requiring one would mean
- *      a buyer who paid in a fresh browser gets nothing.
- *
- * The check runs anyway, because a verified purchase is worth recording and
- * worth showing. It just never gets to veto the download.
+ * The webhook and the redirect race each other, so verifySession() polls for
+ * about 12 seconds. If the session is still unconfirmed after that, the buyer
+ * gets a "check again" button and the restore-by-email path, never a dead end.
  */
 const PaymentSuccess = () => {
   useNoindex();
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const sessionId = params.get("session_id") ?? undefined;
+  const sessionId = params.get("session_id")?.trim() || undefined;
 
   const [entitlement, setEntitlement] = useState<Entitlement | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const email = loadBuyerEmail();
 
   useEffect(() => {
     let active = true;
+    setEntitlement(null);
 
     // A short grace period so the status line does not flicker between states
-    // on a fast connection, and so the buyer reads a confirmation rather than
-    // watching a spinner blink.
+    // on a fast connection.
     const started = Date.now();
     const MIN_VISIBLE_MS = 600;
 
-    resolveEntitlement({ sessionId, email: email ?? undefined, trustRedirect: true })
+    resolveEntitlement({ sessionId, email: sessionId ? undefined : email ?? undefined })
       .then(async (result) => {
         const elapsed = Date.now() - started;
         if (elapsed < MIN_VISIBLE_MS) {
@@ -54,23 +48,16 @@ const PaymentSuccess = () => {
         if (active) setEntitlement(result);
       })
       .catch(() => {
-        // resolveEntitlement is written not to throw; this is belt and braces
-        // so an unexpected failure still cannot strand a paying customer.
-        if (active) {
-          setEntitlement({
-            entitled: true,
-            source: "stripe-redirect",
-            email: email ?? undefined,
-            unverified: true,
-          });
-        }
+        // resolveEntitlement is written not to throw. If it does, offer a retry
+        // rather than unlocking on no evidence.
+        if (active) setEntitlement({ entitled: false, source: "none", pending: !!sessionId, inconclusive: true });
       });
 
     return () => {
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId]);
+  }, [sessionId, attempt]);
 
   if (!entitlement) {
     return (
@@ -100,7 +87,11 @@ const PaymentSuccess = () => {
           transition={{ type: "spring", stiffness: 200, delay: 0.15 }}
           className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 border border-primary/20 mb-6"
         >
-          <CheckCircle className="w-10 h-10 text-primary" />
+          {entitlement.entitled ? (
+            <CheckCircle className="w-10 h-10 text-primary" />
+          ) : (
+            <MailQuestion className="w-10 h-10 text-primary" />
+          )}
         </motion.div>
 
         {entitlement.entitled ? (
@@ -132,12 +123,31 @@ const PaymentSuccess = () => {
 
             <PremiumDelivery autoDownload />
           </>
+        ) : entitlement.pending ? (
+          <>
+            <h1 className="font-display text-3xl text-gradient-gold mb-3">Still confirming your payment</h1>
+            <p className="font-body text-sm text-muted-foreground mb-6 max-w-md mx-auto">
+              {entitlement.inconclusive
+                ? "We couldn't reach our server just now. Your payment is safe — check again in a moment."
+                : "Stripe hasn't sent us the confirmation yet. This usually takes a few seconds."}{" "}
+              Your receipt from Stripe is your proof of purchase, and you can also restore it by email from your
+              reading page.
+            </p>
+            <Button
+              onClick={() => setAttempt((n) => n + 1)}
+              className="h-12 px-8 bg-primary text-primary-foreground hover:bg-gold-light shadow-gold font-display tracking-[0.13em] uppercase"
+            >
+              <Loader2 className="w-4 h-4 mr-2" />
+              Check again
+            </Button>
+          </>
         ) : (
           <>
-            <h1 className="font-display text-3xl text-gradient-gold mb-3">We couldn't confirm a purchase</h1>
+            <h1 className="font-display text-3xl text-gradient-gold mb-3">No purchase to confirm here</h1>
             <p className="font-body text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-              If you paid with a different email address, you can restore it from your reading page. If you think this
-              is a mistake, reply to your Stripe receipt and we'll sort it out.
+              This page confirms a payment when Stripe sends you here after checkout. If you've already paid, restore
+              your Premium Edition with the email address you paid with. If something looks wrong, reply to your Stripe
+              receipt and we'll sort it out.
             </p>
             <Button
               onClick={() => navigate("/")}

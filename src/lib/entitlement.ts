@@ -14,10 +14,11 @@
 // HOW ENFORCEMENT WORKS NOW
 // Two layers, resolved in this order by resolveEntitlement() below:
 //
-//   1. The server (supabase/functions/verify-entitlement), which answers only
+//   1. The server (WordPress mdx/v1/verify-entitlement), which answers only
 //      from a row written by the signature-verified Stripe webhook. This is
 //      the real check and it cannot be forged from the browser.
-//   2. This local flag, as a fallback.
+//   2. This local flag, which is set only after (1) has confirmed a purchase
+//      in this browser, so a buyer is not re-checked on every visit.
 //
 // The fallback is deliberately not removed. The PDF is generated in the
 // browser, so a paying customer can always be handed their file; refusing to
@@ -129,7 +130,7 @@ export function loadBuyerEmail(): string | null {
 // Resolution
 // ---------------------------------------------------------------------------
 
-export type EntitlementSource = "server" | "stripe-redirect" | "local" | "none";
+export type EntitlementSource = "server" | "local" | "none";
 
 export interface Entitlement {
   entitled: boolean;
@@ -138,31 +139,28 @@ export interface Entitlement {
   email?: string;
   /** The backend could not be reached, so this rests on weaker evidence. */
   unverified?: boolean;
+  /** A session id was given but is not confirmed yet; worth checking again. */
+  pending?: boolean;
+  /** The backend could not be reached at all. */
+  inconclusive?: boolean;
 }
 
 /**
  * Decide whether this visitor may download the Premium Edition.
  *
- * Precedence: server confirmation > Stripe redirect > local flag.
+ * Precedence: server confirmation > local flag.
  *
- * `trustRedirect` must only be set by the page Stripe redirects to. It exists
- * because the checkout in production is a Stripe *payment link*, and payment
- * links do not reliably carry a session id onto the success URL. Requiring one
- * would mean a buyer who paid in a fresh browser lands on "we couldn't confirm
- * a purchase" and receives nothing — charging someone and delivering nothing is
- * a far worse failure than the theoretical visitor who types the URL by hand.
- *
- * The same reasoning applies on the session_id branch, which grants even when
- * the server cannot confirm: a missing row is much more often a delayed or lost
- * webhook than a forged id, and the two mistakes do not cost the same. It is
- * also not a new hole — anyone willing to fake a session id could equally set
- * the localStorage flag.
- *
- * The practical effect is that this function makes the honest path verifiable
- * without ever becoming a single point of failure for delivery.
+ * Since 2026-11-22 the Stripe payment link redirects to
+ * /payment-success?session_id={CHECKOUT_SESSION_ID}, and a signed webhook
+ * records every paid session of that link on the WordPress backend. So the
+ * success page no longer has to trust a bare visit: it unlocks only when the
+ * backend confirms the session id. A session that is not confirmed yet (the
+ * webhook is a few seconds behind, or the backend is unreachable) is reported
+ * as `pending`, and the page offers to check again rather than unlocking or
+ * declining outright.
  */
 export async function resolveEntitlement(
-  opts: { sessionId?: string; email?: string; trustRedirect?: boolean } = {},
+  opts: { sessionId?: string; email?: string } = {},
 ): Promise<Entitlement> {
   const sessionId = opts.sessionId?.trim();
   const email = opts.email?.trim().toLowerCase();
@@ -170,7 +168,7 @@ export async function resolveEntitlement(
   const knownEmail = email || loadBuyerEmail() || undefined;
 
   // Imported here rather than at module scope so that the profile helpers do
-  // not drag the Supabase client into every consumer of this file.
+  // not pull the backend client into every consumer of this file.
   const { verifySession, verifyEmail } = await import("@/lib/premiumApi");
 
   if (sessionId) {
@@ -180,16 +178,12 @@ export async function resolveEntitlement(
       if (result.email) saveBuyerEmail(result.email);
       return { entitled: true, source: "server", email: result.email ?? knownEmail };
     }
-    // Arriving here with a session id means Stripe redirected this browser, so
-    // the payment happened even if we could not read the record back.
-    markPremiumUnlocked();
-    if (knownEmail) saveBuyerEmail(knownEmail);
-    return {
-      entitled: true,
-      source: "stripe-redirect",
-      email: knownEmail,
-      unverified: true,
-    };
+    // Not confirmed. Never unlock on an unconfirmed id: anyone can type one.
+    // A browser that already holds a confirmed purchase keeps it.
+    if (locallyUnlocked) {
+      return { entitled: true, source: "local", email: knownEmail, unverified: true };
+    }
+    return { entitled: false, source: "none", pending: true, inconclusive: result.inconclusive };
   }
 
   if (email) {
@@ -199,30 +193,12 @@ export async function resolveEntitlement(
       saveBuyerEmail(email);
       return { entitled: true, source: "server", email: result.email ?? email };
     }
-    // On the page Stripe redirects to, a server "no" for a known address is not
-    // evidence against the payment: the payment link carries no session id,
-    // the webhook may not have landed (or may not be configured), and the
-    // buyer may have paid with a different address than the one they gave the
-    // email gate. Checking the address first and then falling back to the
-    // redirect keeps a verified result when there is one, without ever letting
-    // the lookup veto a delivery the redirect would have made.
-    if (opts.trustRedirect) {
-      markPremiumUnlocked();
-      return { entitled: true, source: "stripe-redirect", email: knownEmail, unverified: true };
-    }
     // A definitive "no" from a reachable server still yields to a local flag:
     // the buyer may have purchased under a different address.
     if (locallyUnlocked) {
       return { entitled: true, source: "local", email: knownEmail, unverified: true };
     }
-    return { entitled: false, source: "none" };
-  }
-
-  // No session id and no address — we are on the post-checkout page and the
-  // only evidence is that Stripe sent this browser here.
-  if (opts.trustRedirect) {
-    markPremiumUnlocked();
-    return { entitled: true, source: "stripe-redirect", email: knownEmail, unverified: true };
+    return { entitled: false, source: "none", inconclusive: result.inconclusive };
   }
 
   return locallyUnlocked

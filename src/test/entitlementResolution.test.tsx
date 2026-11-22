@@ -137,13 +137,31 @@ describe("checkout", () => {
 });
 
 describe("entitlement resolution", () => {
-  it("grants on a Stripe redirect even when the backend cannot be reached", async () => {
-    const result = await resolveEntitlement({ sessionId: "cs_test_abc" });
+  it("does not unlock on a session id the backend cannot be reached to confirm", async () => {
+    const result = await resolveEntitlement({ sessionId: "cs_live_abc" });
 
-    expect(result.entitled).toBe(true);
-    expect(result.source).toBe("stripe-redirect");
-    // recorded, so the paywall stays off on the next visit
-    expect(isPremiumUnlocked()).toBe(true);
+    expect(result.entitled).toBe(false);
+    expect(result.pending).toBe(true);
+    expect(result.inconclusive).toBe(true);
+    expect(isPremiumUnlocked()).toBe(false);
+  });
+
+  it("does not unlock on a session id the backend has no record of", async () => {
+    vi.useFakeTimers();
+    try {
+      backendSays({ entitled: false, reason: "not_found" });
+      const pending = resolveEntitlement({ sessionId: "cs_live_madeup" });
+      await vi.runAllTimersAsync();
+      const result = await pending;
+
+      expect(result.entitled).toBe(false);
+      expect(result.pending).toBe(true);
+      expect(isPremiumUnlocked()).toBe(false);
+      // it polled for the webhook rather than giving up on the first miss
+      expect(mockFetch.mock.calls.length).toBeGreaterThan(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("reports a verified purchase when the backend confirms the session", async () => {
@@ -193,43 +211,14 @@ describe("entitlement resolution", () => {
     expect(result.source).toBe("none");
   });
 
-  it("delivers to a payment-link buyer who arrives with no session id", async () => {
-    // The production checkout is a Stripe payment link, which does not reliably
-    // put a session id on the success URL. This is the common case, not an edge
-    // case: the buyer has paid, has a fresh browser, and has no local flag.
-    const result = await resolveEntitlement({ trustRedirect: true });
+  it("unlocks nothing for a visitor with no session id and no address", async () => {
+    const result = await resolveEntitlement({});
 
-    expect(result.entitled).toBe(true);
-    expect(result.source).toBe("stripe-redirect");
-    expect(isPremiumUnlocked()).toBe(true);
+    expect(result.entitled).toBe(false);
+    expect(isPremiumUnlocked()).toBe(false);
   });
 
-  it("delivers on the success page even when the server has no record of the gate email", async () => {
-    // Live on 2026-11-22: a buyer whose address was saved landed on "We couldn't
-    // confirm a purchase", because the address lookup ran first and its "not
-    // found" (no webhook, or paid with another address) ended the resolution
-    // before the redirect was considered.
-    backendSays({ entitled: false, reason: "not_found" });
-    saveBuyerEmail("grace@example.com");
-
-    const result = await resolveEntitlement({ email: "grace@example.com", trustRedirect: true });
-
-    expect(result.entitled).toBe(true);
-    expect(result.source).toBe("stripe-redirect");
-    expect(result.email).toBe("grace@example.com");
-    expect(isPremiumUnlocked()).toBe(true);
-  });
-
-  it("still reports a verified purchase on the success page when the server has one", async () => {
-    backendSays({ entitled: true, email: "grace@example.com" });
-
-    const result = await resolveEntitlement({ email: "grace@example.com", trustRedirect: true });
-
-    expect(result.source).toBe("server");
-  });
-
-  it("does not let the redirect trust leak into the restore path", async () => {
-    // Same page, but the restore lookup must still be able to say no.
+  it("lets the restore lookup say no", async () => {
     backendSays({ entitled: false, reason: "not_found" });
 
     const result = await resolveEntitlement({ email: "stranger@example.com" });
