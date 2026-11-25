@@ -5,8 +5,8 @@ import { FREE_PAGE_COUNT, PREMIUM_PAGE_LABEL } from "@/lib/editions";
  * Terms for the Blueprint app and the Premium Edition, including the refund
  * policy that the paywall links to (#refunds).
  *
- * REFUND_DAYS is a business decision for the owner. 14 days matches the EU
- * cooling-off period, so EU buyers are covered without a separate
+ * REFUND_DAYS: 14-day full refund, confirmed by the owner on 25 Nov 2026.
+ * It matches the EU cooling-off period, so EU buyers are covered without a separate
  * "waive your right of withdrawal" checkbox at checkout.
  */
 export const REFUND_DAYS = 14;
