@@ -12,16 +12,24 @@ interface GuidedIntakeProps {
   initialName?: string;
   /** Explains why the visitor landed here instead of on their reading. */
   notice?: string;
+  /** ISO birth date carried over from the Life Path calculator. */
+  initialDob?: string;
 }
 
-const GuidedIntake = ({ onComplete, initialName = "", notice }: GuidedIntakeProps) => {
+const GuidedIntake = ({ onComplete, initialName = "", notice, initialDob = "" }: GuidedIntakeProps) => {
   const trimmedInitialName = initialName.trim();
   // If the name already survived the trip, start on the date — that is the only
   // thing we are actually missing. "← Go back" is still there to correct it.
   const [step, setStep] = useState(trimmedInitialName ? 1 : 0);
   const [name, setName] = useState(trimmedInitialName);
-  const [dob, setDob] = useState("");
+  const [dob, setDob] = useState(initialDob);
   const [error, setError] = useState("");
+
+  // The handoff date is read in the parent's effect, so it can arrive after
+  // the first render. Fill it in unless the visitor has already typed one.
+  useEffect(() => {
+    if (initialDob) setDob((current) => current || initialDob);
+  }, [initialDob]);
 
   // The parent reads the name out of the URL inside an effect, so this
   // component can already be on screen before the prop arrives — and a
@@ -73,7 +81,7 @@ const GuidedIntake = ({ onComplete, initialName = "", notice }: GuidedIntakeProp
             {Math.round(progress)}%
           </span>
         </div>
-        <Progress value={progress} className="h-1 bg-muted/30" />
+        <Progress value={progress} aria-label={`Step ${step + 1} of ${totalSteps}`} className="h-1 bg-muted/30" />
       </motion.div>
 
       {/* Steps */}
@@ -91,10 +99,14 @@ const GuidedIntake = ({ onComplete, initialName = "", notice }: GuidedIntakeProp
               What's your <span className="text-gradient-gold">full birth name</span>?
             </h2>
             <p className="font-body text-base text-muted-foreground text-center mb-8 leading-relaxed">
-              The name given at birth — each letter carries a unique vibration that shapes your destiny.
+              The name given at birth. Numerology turns each letter into a number to find your Destiny, Soul Urge and
+              Personality numbers.
             </p>
 
+            <label htmlFor="intake-name" className="sr-only">Full birth name</label>
             <Input
+              id="intake-name"
+              autoComplete="name"
               type="text"
               placeholder="e.g. Alexander James Smith"
               value={name}
@@ -128,10 +140,15 @@ const GuidedIntake = ({ onComplete, initialName = "", notice }: GuidedIntakeProp
               When were you <span className="text-gradient-gold">born</span>?
             </h2>
             <p className="font-body text-base text-muted-foreground text-center mb-8 leading-relaxed">
-              Your birth date encodes your Life Path — the core lesson and purpose of this lifetime.
+              {initialDob && dob === initialDob
+                ? "We filled in the date from the Life Path calculator. Change it if it's not right."
+                : "Numerology reads your Life Path, Birthday and Personal Year numbers from your birth date."}
             </p>
 
+            <label htmlFor="intake-dob" className="sr-only">Date of birth</label>
             <Input
+              id="intake-dob"
+              autoComplete="bday"
               type="date"
               value={dob}
               onChange={(e) => { setDob(e.target.value); setError(""); }}

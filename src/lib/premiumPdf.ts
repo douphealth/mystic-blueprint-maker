@@ -283,7 +283,7 @@ export function premiumShadowAnalysis(kit: PdfKit, profile: NumerologyProfile, n
 
   // ---- the core shadows, in full ------------------------------------------
   const coreShadows: [string, number, string][] = [
-    ["Life Path", profile.lifePath, "The deepest and slowest-moving pattern. This is the shadow you will meet for your whole life, in increasingly subtle forms."],
+    ["Life Path", profile.lifePath, "The deepest and slowest-moving pattern. Numerology treats this as a lifelong shadow theme that tends to return in subtler forms."],
     ["Expression", profile.expression, "The shadow of your capability. It shows up in how you work, not in how you feel — which is why other people often see it before you do."],
   ];
 

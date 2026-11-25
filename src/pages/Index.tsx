@@ -17,7 +17,12 @@ import { calculateFullProfile, type NumerologyProfile } from "@/lib/numerology";
 import { getInterpretationSafe, birthdayInterpretations } from "@/lib/interpretations";
 import { saveProfile, saveBuyerEmail, loadBuyerEmail, isPremiumUnlocked, resolveEntitlement } from "@/lib/entitlement";
 import { parseIsoDateLocal } from "@/lib/localDate";
+import { readHandoff, clearHandoffFromUrl, cleanHandoffDob } from "@/lib/handoff";
 import { useAuth } from "@/contexts/AuthContext";
+import LegalFooter from "@/components/LegalFooter";
+import LandingDetails from "@/components/LandingDetails";
+import { FREE_PAGE_COUNT } from "@/lib/editions";
+import { RESTORE_SENT_NOTICE } from "@/lib/premiumApi";
 
 type Phase = "landing" | "email-gate" | "calculating" | "revealing" | "results";
 
@@ -37,6 +42,8 @@ const Index = () => {
   const [phase, setPhase] = useState<Phase>("landing");
   const [loadingStep, setLoadingStep] = useState(0);
   const [intakeNotice, setIntakeNotice] = useState("");
+  const [handoffDob, setHandoffDob] = useState("");
+  const [restoreNotice, setRestoreNotice] = useState("");
   // A returning visitor's address, so checkout stays prefilled on a later visit.
   const [userEmail, setUserEmail] = useState(() => loadBuyerEmail() ?? "");
   const [autoDownload, setAutoDownload] = useState(false);
@@ -67,6 +74,15 @@ const Index = () => {
 
     // create-payment sends an already-entitled buyer to /?restore=1&email=...
     // instead of a second checkout. Confirm it with the server and unlock.
+    // Checkout found an earlier purchase for this address and emailed a
+    // one-time unlock link instead of charging twice.
+    if (params.get("restore") === "sent") {
+      setRestoreNotice(RESTORE_SENT_NOTICE);
+    }
+
+    // Older backend: the restore URL carried the email. The current backend
+    // no longer unlocks on an email alone (anyone could type one), so this
+    // only succeeds against the old server.
     if (params.get("restore") === "1" && emailParam?.includes("@")) {
       setUserEmail(emailParam.trim());
       resolveEntitlement({ email: emailParam }).then((r) => {
@@ -74,11 +90,43 @@ const Index = () => {
       });
     }
 
+    // Arriving from the Life Path calculator: the birth date travels in the URL
+    // fragment. Fill it in, ask only for the name, and drop it from the URL.
+    const handoff = readHandoff();
+    // From the free-Blueprint email: name and date are both there and the
+    // email was already given, so open the reading itself.
+    if (handoff.from === "email" && handoff.name && handoff.dob) {
+      clearHandoffFromUrl();
+      const emailDob = parseIsoDateLocal(handoff.dob);
+      if (emailDob) {
+        setUserName(handoff.name);
+        setUserDob(emailDob);
+        saveProfile(handoff.name, emailDob);
+        setProfile(calculateFullProfile(handoff.name, emailDob));
+        setPhase("results");
+        return;
+      }
+    }
+    if (handoff.dob) {
+      clearHandoffFromUrl();
+      setHandoffDob(handoff.dob);
+      setIntakeNotice("Your birth date from the Life Path calculator is already filled in. Add your full birth name to see all six numbers.");
+      return;
+    }
+
     if (!nameParam && !dobParam) return;
 
     // Decode '+' as spaces
     const decodedName = (nameParam ?? "").replace(/\+/g, " ").trim();
     const decodedDob = (dobParam ?? "").trim();
+
+    // A link with only a birth date (older calculator links used ?dob=): treat
+    // it like the fragment handoff rather than as a broken personalised link.
+    if (!decodedName && cleanHandoffDob(decodedDob)) {
+      setHandoffDob(cleanHandoffDob(decodedDob)!);
+      setIntakeNotice("Your birth date is already filled in. Add your full birth name to see all six numbers.");
+      return;
+    }
 
     if (emailParam?.trim()) {
       setUserEmail(emailParam.trim());
@@ -359,13 +407,7 @@ const Index = () => {
             <PremiumPaywall email={userEmail} onUnlocked={() => setPremiumUnlocked(true)} />
           )}
 
-          {/* Footer */}
-          <footer className="text-center mt-14 pt-6 border-t border-border/20">
-            <p className="font-display text-xs text-primary/50 tracking-[0.3em]">MYSTICALDIGITS.COM</p>
-            <p className="font-ui text-[10px] text-muted-foreground mt-1">
-              © {new Date().getFullYear()} MysticalDigits — All rights reserved
-            </p>
-          </footer>
+          <LegalFooter className="mt-14" />
         </div>
       </div>
     );
@@ -373,9 +415,9 @@ const Index = () => {
 
   // ── Landing ──
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-5">
+    <div className="min-h-screen bg-background flex flex-col items-center px-5">
       <FloatingParticles />
-      <div className="relative z-10 text-center max-w-lg w-full">
+      <main className="relative z-10 text-center max-w-lg w-full min-h-[100svh] flex flex-col justify-center py-10">
         {/* Ambient rings */}
         <div className="absolute inset-0 -top-32 flex items-center justify-center pointer-events-none">
           <motion.div className="w-80 h-80 rounded-full border border-primary/8" animate={{ rotate: 360 }} transition={{ duration: 50, repeat: Infinity, ease: "linear" }}>
@@ -387,40 +429,35 @@ const Index = () => {
           <motion.div className="absolute w-36 h-36 rounded-full border border-primary/12" animate={{ rotate: 360 }} transition={{ duration: 25, repeat: Infinity, ease: "linear" }} style={{ borderStyle: "dashed" }} />
         </div>
 
-        <motion.p initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }} className="font-ui text-[10px] tracking-[0.5em] uppercase text-primary/50 mb-6">
-          MysticalDigits
-        </motion.p>
-        <motion.h1
-          initial={{ opacity: 0, y: 30, filter: "blur(10px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          transition={{ duration: 1.2, delay: 0.2 }}
-          className="font-display text-3xl md:text-5xl text-gradient-gold mb-4 leading-[1.1] shimmer-text"
-        >
-          Discover Your Personal Blueprint
-        </motion.h1>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6, duration: 1 }}
-          className="font-body text-lg md:text-xl text-foreground/50 mb-10 leading-relaxed"
-        >
-          Uncover all 6 core numbers — Life Path, Destiny, Soul Urge,
-          Personality, Birthday & Personal Year — in a free, personalized reading.
-        </motion.p>
+        <p className="font-ui text-[10px] tracking-[0.5em] uppercase text-primary/50 mb-6">
+          <a href="https://mysticaldigits.com/" className="hover:text-primary transition-colors">MysticalDigits</a>
+        </p>
+        {/* The H1 and intro are the largest paint on a phone, so they render
+            visible from the first frame (no opacity/blur entrance), which
+            keeps LCP from waiting on an animation. */}
+        <h1 className="font-display text-3xl md:text-5xl text-gradient-gold mb-4 leading-[1.1]">
+          Free Numerology Blueprint
+        </h1>
+        <p className="font-body text-lg md:text-xl text-foreground/60 mb-10 leading-relaxed">
+          Enter your birth name and date to see your Life Path, Destiny, Soul Urge,
+          Personality, Birthday and Personal Year numbers, each with a written reading.
+        </p>
 
-        <GuidedIntake onComplete={handleSubmit} initialName={userName} notice={intakeNotice} />
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.5 }}
-          className="mt-8 space-y-1"
-        >
-          <p className="font-ui text-[10px] text-muted-foreground tracking-wider">
-            Free · No account required · All 6 numbers + PDF download
+        {restoreNotice && (
+          <p role="status" className="mb-6 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 font-ui text-xs leading-relaxed text-foreground/80">
+            {restoreNotice}
           </p>
-        </motion.div>
-      </div>
+        )}
+
+        <GuidedIntake onComplete={handleSubmit} initialName={userName} initialDob={handoffDob} notice={intakeNotice} />
+
+        <p className="mt-8 font-ui text-[10px] text-muted-foreground tracking-wider">
+          Free · No account · 6 numbers + {FREE_PAGE_COUNT}-page PDF · For reflection and entertainment
+        </p>
+      </main>
+
+      <LandingDetails />
+      <LegalFooter className="relative z-10 w-full max-w-3xl mb-8" />
     </div>
   );
 };

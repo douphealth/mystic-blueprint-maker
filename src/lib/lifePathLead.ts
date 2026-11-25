@@ -3,6 +3,8 @@ export interface LifePathLeadPayload {
   fullName: string;
   birthDate?: string;
   source?: string;
+  /** What the visitor agreed to, when, in their own words on screen. */
+  consent?: { marketing: boolean; text: string; at: string };
 }
 
 export interface LifePathLeadResult {

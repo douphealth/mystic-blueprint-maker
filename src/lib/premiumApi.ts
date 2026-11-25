@@ -59,13 +59,23 @@ export interface VerifyResult {
   inconclusive: boolean;
   /** Server-supplied explanation, useful for diagnostics. */
   reason?: string;
+  /** Order details for the success page, when the server sends them. */
+  receipt?: WpReceipt;
 }
 
 export interface CheckoutResult {
   url: string;
-  /** "server" = URL supplied by our backend, "link" = static fallback. */
-  mode: "server" | "link";
+  /**
+   * "server" = checkout URL from our backend, "link" = static fallback,
+   * "restore_sent" = this address already owns the Premium Edition and the
+   * server emailed it an unlock link instead of opening a second checkout.
+   */
+  mode: "server" | "link" | "restore_sent";
 }
+
+/** Shown when checkout recognised an existing buyer and emailed them instead. */
+export const RESTORE_SENT_NOTICE =
+  "You already own the Premium Edition. We've emailed you a one-time link that unlocks it in this browser. Check your inbox (and spam folder).";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -73,7 +83,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
  * Imported lazily by the callers below, so entitlement and checkout carry no
  * static dependency on any particular backend host.
  */
-import type { WpVerifyPayload } from "./wpBackend";
+import type { WpVerifyPayload, WpReceipt } from "./wpBackend";
 
 /** One attempt at asking the backend. Throws only on transport failure. */
 async function askOnce(body: Record<string, string>): Promise<VerifyResult> {
@@ -84,7 +94,7 @@ async function askOnce(body: Record<string, string>): Promise<VerifyResult> {
     return { entitled: false, inconclusive: true, reason: "transport" };
   }
   if (data?.entitled === true) {
-    return { entitled: true, email: data.email, inconclusive: false };
+    return { entitled: true, email: data.email, inconclusive: false, receipt: data.receipt };
   }
   // The backend tells us plainly when it could not reach a verdict; trust that
   // over inferring "not found" from a missing field.
@@ -129,8 +139,51 @@ export function verifySession(sessionId: string): Promise<VerifyResult> {
 }
 
 /**
- * The restore path: a buyer who cleared their browser or changed device looks
- * up their purchase by the address they paid with.
+ * Confirm a one-time unlock token from a restore email. The token is signed by
+ * the server and names the purchase, so it proves the visitor can read the
+ * buyer's inbox, which an email address typed into a form does not.
+ */
+export function verifyRestoreToken(token: string): Promise<VerifyResult> {
+  const trimmed = token.trim();
+  if (!trimmed) {
+    return Promise.resolve({ entitled: false, inconclusive: false, reason: "no_token" });
+  }
+  return ask({ token: trimmed }, 1);
+}
+
+export type RestoreRequestResult =
+  /** The server will email a link if the address has a purchase. */
+  | { kind: "link_sent" }
+  /** The server is older and still answers an email lookup directly. */
+  | { kind: "legacy"; result: VerifyResult }
+  /** Could not reach the server. */
+  | { kind: "unreachable" };
+
+/**
+ * "I already paid": ask the server to email an unlock link.
+ *
+ * Until the request-restore route is deployed the server answers 404, and we
+ * fall back to the older direct email lookup, so this client works against
+ * both versions of the backend.
+ */
+export async function requestRestoreLink(email: string): Promise<RestoreRequestResult> {
+  const trimmed = email.trim().toLowerCase();
+  try {
+    const { wpRequestRestore } = await import("./wpBackend");
+    const { data, error } = await wpRequestRestore({ email: trimmed }, VERIFY_TIMEOUT_MS);
+    if (!error && data?.ok) return { kind: "link_sent" };
+    if (error?.message === "http_404") {
+      return { kind: "legacy", result: await verifyEmail(trimmed) };
+    }
+    return { kind: "unreachable" };
+  } catch {
+    return { kind: "unreachable" };
+  }
+}
+
+/**
+ * The older restore path: look a purchase up by email. The current backend
+ * declines this (reason "use_restore_link"); kept for the rollout window.
  */
 export function verifyEmail(email: string): Promise<VerifyResult> {
   const trimmed = email.trim().toLowerCase();
@@ -161,10 +214,14 @@ export async function startCheckout(email?: string): Promise<CheckoutResult> {
       CHECKOUT_TIMEOUT_MS,
     );
 
+    if (!error && data?.mode === "restore_sent") {
+      // This address already bought it. The server emailed an unlock link
+      // rather than opening a second checkout or unlocking on the email alone.
+      return { url: data.url ?? "", mode: "restore_sent" };
+    }
     if (!error && typeof data?.url === "string" && data.url.startsWith("http")) {
-      // The backend returns a restore URL when this buyer is already entitled,
-      // so a returning purchaser is never sent back through checkout and
-      // charged twice. Treat that as a server-mode result either way.
+      // Older backend: an already-entitled buyer gets a restore URL instead of
+      // a checkout, so a returning purchaser is never charged twice.
       return { url: data.url, mode: "server" };
     }
   } catch {

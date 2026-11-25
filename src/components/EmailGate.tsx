@@ -7,6 +7,10 @@ import { submitLifePathLead } from "@/lib/lifePathLead";
 import { formatIsoDateLocal } from "@/lib/localDate";
 import { FREE_PAGE_COUNT } from "@/lib/editions";
 
+/** Shown next to the checkbox and stored with the lead, so the consent record says what was agreed to. */
+export const CONSENT_TEXT =
+  "Email me my free Blueprint guide and a short series of numerology emails, including an offer for the paid Premium Edition. I can unsubscribe at any time.";
+
 interface EmailGateProps {
   userName: string;
   birthDate?: Date | null;
@@ -15,6 +19,7 @@ interface EmailGateProps {
 
 const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
   const [email, setEmail] = useState("");
+  const [consent, setConsent] = useState(false);
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
@@ -26,6 +31,10 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
   const handleSubmit = async () => {
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setError("Please enter a valid email address");
+      return;
+    }
+    if (!consent) {
+      setError("Please tick the box to agree to the emails. They are how we send your guide.");
       return;
     }
     setError("");
@@ -40,6 +49,7 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
         email: email.trim(),
         fullName: userName,
         birthDate: birthDate ? formatIsoDateLocal(birthDate) : undefined,
+        consent: { marketing: true, text: CONSENT_TEXT, at: new Date().toISOString() },
       });
       delivered = res.ok;
       if (!res.ok) {
@@ -110,7 +120,7 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
                 transition={{ delay: 0.5 }}
                 className="font-ui text-[10px] text-muted-foreground/60 tracking-wider mb-8"
               >
-                Instant access after capture: your results, the Download Free Blueprint PDF button, and a high-value email guide showing exactly how to use your numbers this week.
+                Your reading opens straight after this step, with the Download Free Blueprint PDF button.
               </motion.p>
 
               <motion.div
@@ -120,8 +130,11 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
               >
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
+                  <label htmlFor="gate-email" className="sr-only">Email address</label>
                   <Input
+                    id="gate-email"
                     type="email"
+                    autoComplete="email"
                     placeholder="your@email.com"
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); setError(""); }}
@@ -130,12 +143,27 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
                     className="bg-card/60 border-border/60 text-foreground font-body text-lg placeholder:text-muted-foreground/30 focus:border-primary focus:ring-primary/20 h-14 text-center pl-10 tracking-wide"
                   />
                 </div>
-                {error && <p className="text-destructive text-xs font-ui text-center mt-2">{error}</p>}
+                <label className="mt-4 flex items-start gap-3 text-left cursor-pointer font-ui text-xs leading-relaxed text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={consent}
+                    onChange={(e) => { setConsent(e.target.checked); setError(""); }}
+                    className="mt-0.5 h-4 w-4 flex-shrink-0 accent-[hsl(var(--gold))]"
+                    aria-describedby="consent-privacy"
+                  />
+                  <span>{CONSENT_TEXT}</span>
+                </label>
+                <p id="consent-privacy" className="mt-2 text-left font-ui text-[11px] leading-relaxed text-muted-foreground/80">
+                  Your name and birth date are used to calculate your reading and to personalise these emails, which
+                  link back to it. We don't sell your details. More in our <a href="/privacy" target="_blank" rel="noopener" className="underline underline-offset-2">privacy notice</a>.
+                </p>
+
+                {error && <p role="alert" className="text-destructive text-xs font-ui text-center mt-2">{error}</p>}
 
                 <Button
                   onClick={handleSubmit}
                   disabled={sending}
-                  className="w-full h-13 mt-4 text-sm font-display tracking-[0.15em] uppercase bg-primary text-primary-foreground hover:bg-gold-light border-0 shadow-gold transition-all duration-300 group"
+                  className="w-full h-auto min-h-[3.25rem] py-3 mt-4 whitespace-normal text-sm font-display tracking-[0.08em] sm:tracking-[0.15em] uppercase bg-primary text-primary-foreground hover:bg-gold-light border-0 shadow-gold transition-all duration-300 group"
                 >
                   {sending ? (
                     <>
@@ -160,8 +188,8 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
                   <span className="rounded-full border border-border/50 bg-card/40 px-2 py-1">1-click opt out</span>
                 </div>
 
-                <p className="font-ui text-[9px] text-muted-foreground/50 mt-3 tracking-wider">
-                  No spam · Free forever · Unsubscribe anytime
+                <p className="font-ui text-[10px] text-muted-foreground/70 mt-3 tracking-wider">
+                  No spam · Free · Unsubscribe from any email
                 </p>
               </motion.div>
             </motion.div>

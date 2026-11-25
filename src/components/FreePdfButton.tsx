@@ -71,7 +71,7 @@ const FreePdfButton = ({ profile, name, autoDownload }: FreePdfButtonProps) => {
         A {FREE_PAGE_COUNT}-page workbook built from your own six numbers — full interpretations, your timing cycle,
         the decision filter, the shadow-to-strategy map, a 30-day activation plan, and printable reflection pages.
       </p>
-      <Button onClick={generatePdf} disabled={generating} className="h-13 px-6 bg-primary text-primary-foreground hover:bg-gold-light shadow-gold font-display tracking-[0.13em] uppercase">
+      <Button onClick={generatePdf} disabled={generating} className="h-auto min-h-[3.25rem] py-3 px-5 w-full sm:w-auto whitespace-normal bg-primary text-primary-foreground hover:bg-gold-light shadow-gold font-display tracking-[0.08em] sm:tracking-[0.13em] uppercase">
         {generating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating Your Workbook…</> : done ? <><CheckCircle className="w-4 h-4 mr-2" />Downloaded</> : <><Download className="w-4 h-4 mr-2" />Download Free Blueprint PDF</>}
       </Button>
       <div className="mt-3 flex items-center justify-center gap-2 text-[10px] text-muted-foreground/60 font-ui tracking-wide">

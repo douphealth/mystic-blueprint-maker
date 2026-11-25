@@ -3,13 +3,14 @@ import { XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useNoindex } from "@/hooks/useNoindex";
+import LegalFooter from "@/components/LegalFooter";
 
 const PaymentCanceled = () => {
   useNoindex();
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -29,7 +30,7 @@ const PaymentCanceled = () => {
           Payment Canceled
         </h1>
         <p className="font-body text-foreground/60 mb-8">
-          No worries — your free reading is still available. You can unlock the full blueprint anytime.
+          You haven't been charged. Your free reading is still here, and you can get the Premium Edition later.
         </p>
 
         <Button
@@ -39,6 +40,7 @@ const PaymentCanceled = () => {
           Back to Reading
         </Button>
       </motion.div>
+      <LegalFooter className="w-full max-w-3xl mt-12" />
     </div>
   );
 };

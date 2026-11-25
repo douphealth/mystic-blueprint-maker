@@ -143,6 +143,14 @@ export interface Entitlement {
   pending?: boolean;
   /** The backend could not be reached at all. */
   inconclusive?: boolean;
+  /** Order details from the server, for the receipt on the success page. */
+  receipt?: Receipt;
+}
+
+export interface Receipt {
+  amount_total?: number;
+  currency?: string;
+  purchased_at?: string;
 }
 
 /**
@@ -160,8 +168,23 @@ export interface Entitlement {
  * declining outright.
  */
 export async function resolveEntitlement(
-  opts: { sessionId?: string; email?: string } = {},
+  opts: { sessionId?: string; email?: string; restoreToken?: string } = {},
 ): Promise<Entitlement> {
+  const restoreToken = opts.restoreToken?.trim();
+  if (restoreToken) {
+    const { verifyRestoreToken } = await import("@/lib/premiumApi");
+    const result = await verifyRestoreToken(restoreToken);
+    if (result.entitled) {
+      markPremiumUnlocked();
+      if (result.email) saveBuyerEmail(result.email);
+      return { entitled: true, source: "server", email: result.email, receipt: result.receipt };
+    }
+    if (isPremiumUnlocked()) {
+      return { entitled: true, source: "local", email: loadBuyerEmail() ?? undefined, unverified: true };
+    }
+    return { entitled: false, source: "none", inconclusive: result.inconclusive };
+  }
+
   const sessionId = opts.sessionId?.trim();
   const email = opts.email?.trim().toLowerCase();
   const locallyUnlocked = isPremiumUnlocked();
@@ -176,7 +199,7 @@ export async function resolveEntitlement(
     if (result.entitled) {
       markPremiumUnlocked();
       if (result.email) saveBuyerEmail(result.email);
-      return { entitled: true, source: "server", email: result.email ?? knownEmail };
+      return { entitled: true, source: "server", email: result.email ?? knownEmail, receipt: result.receipt };
     }
     // Not confirmed. Never unlock on an unconfirmed id: anyone can type one.
     // A browser that already holds a confirmed purchase keeps it.

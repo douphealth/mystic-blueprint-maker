@@ -83,7 +83,7 @@ const PremiumPdfButton = ({ profile, name, autoDownload }: PremiumPdfButtonProps
       <Button
         onClick={generatePdf}
         disabled={generating}
-        className="h-13 px-6 bg-primary text-primary-foreground hover:bg-gold-light shadow-gold font-display tracking-[0.13em] uppercase"
+        className="h-auto min-h-[3.25rem] py-3 px-5 w-full sm:w-auto whitespace-normal bg-primary text-primary-foreground hover:bg-gold-light shadow-gold font-display tracking-[0.08em] sm:tracking-[0.13em] uppercase"
       >
         {generating ? (
           <>
