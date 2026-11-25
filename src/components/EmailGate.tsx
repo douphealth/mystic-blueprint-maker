@@ -163,7 +163,7 @@ const EmailGate = ({ userName, birthDate, onComplete }: EmailGateProps) => {
                 <Button
                   onClick={handleSubmit}
                   disabled={sending}
-                  className="w-full h-13 mt-4 text-sm font-display tracking-[0.15em] uppercase bg-primary text-primary-foreground hover:bg-gold-light border-0 shadow-gold transition-all duration-300 group"
+                  className="w-full h-auto min-h-[3.25rem] py-3 mt-4 whitespace-normal text-sm font-display tracking-[0.08em] sm:tracking-[0.15em] uppercase bg-primary text-primary-foreground hover:bg-gold-light border-0 shadow-gold transition-all duration-300 group"
                 >
                   {sending ? (
                     <>

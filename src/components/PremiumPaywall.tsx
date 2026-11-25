@@ -120,7 +120,7 @@ const PremiumPaywall = ({ email, onUnlocked }: PremiumPaywallProps) => {
           transition={{ delay: 0.4 }}
         >
           <Button
-            className="h-14 px-14 text-sm font-display tracking-[0.15em] uppercase bg-primary text-primary-foreground hover:bg-gold-light border-0 shadow-gold transition-all duration-300"
+            className="h-auto min-h-14 py-3 px-6 sm:px-14 w-full sm:w-auto max-w-md whitespace-normal text-sm font-display tracking-[0.08em] sm:tracking-[0.15em] uppercase bg-primary text-primary-foreground hover:bg-gold-light border-0 shadow-gold transition-all duration-300"
             onClick={handleUnlock}
             disabled={loading}
           >
