@@ -93,6 +93,20 @@ const Index = () => {
     // Arriving from the Life Path calculator: the birth date travels in the URL
     // fragment. Fill it in, ask only for the name, and drop it from the URL.
     const handoff = readHandoff();
+    // From the free-Blueprint email: name and date are both there and the
+    // email was already given, so open the reading itself.
+    if (handoff.from === "email" && handoff.name && handoff.dob) {
+      clearHandoffFromUrl();
+      const emailDob = parseIsoDateLocal(handoff.dob);
+      if (emailDob) {
+        setUserName(handoff.name);
+        setUserDob(emailDob);
+        saveProfile(handoff.name, emailDob);
+        setProfile(calculateFullProfile(handoff.name, emailDob));
+        setPhase("results");
+        return;
+      }
+    }
     if (handoff.dob) {
       clearHandoffFromUrl();
       setHandoffDob(handoff.dob);

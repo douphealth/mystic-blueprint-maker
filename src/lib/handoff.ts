@@ -12,6 +12,12 @@
 // requests. We read it once and then remove it from the address bar.
 //
 // `?dob=` in the query string is still accepted for older links.
+//
+// The free-Blueprint email links back the same way, with the name as well:
+//
+//   https://blueprint.mysticaldigits.com/#name=Grace%20Moore&dob=1985-03-21&from=email
+//
+// That visitor already gave us their email, so the reading opens directly.
 // ---------------------------------------------------------------------------
 
 import { parseIsoDateLocal } from "./localDate";
@@ -19,8 +25,10 @@ import { parseIsoDateLocal } from "./localDate";
 export interface Handoff {
   /** ISO yyyy-mm-dd, already validated as a real calendar date. */
   dob?: string;
+  /** Full birth name, only on links from our own email. */
+  name?: string;
   /** Where the visitor came from, for the notice wording. */
-  from?: "calculator";
+  from?: "calculator" | "email";
 }
 
 const ISO_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -43,7 +51,19 @@ export function readHandoff(loc: Pick<Location, "hash"> = window.location): Hand
   const params = new URLSearchParams(hash);
   const dob = cleanDob(params.get("dob"));
   if (!dob) return {};
-  return { dob, from: params.get("from") === "calculator" ? "calculator" : undefined };
+  const from = params.get("from");
+  if (from === "email") {
+    const name = cleanName(params.get("name"));
+    return name ? { dob, name, from: "email" } : { dob };
+  }
+  return { dob, from: from === "calculator" ? "calculator" : undefined };
+}
+
+function cleanName(raw: string | null | undefined): string | undefined {
+  const value = (raw ?? "").replace(/\s+/g, " ").trim();
+  if (!value || value.length > 120) return undefined;
+  // Letters (any script), spaces, hyphens, apostrophes and dots only.
+  return /^[\p{L}\p{M}][\p{L}\p{M} .'’-]*$/u.test(value) ? value : undefined;
 }
 
 /** Remove the fragment so a shared or bookmarked URL does not carry the date. */

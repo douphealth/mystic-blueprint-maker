@@ -19,6 +19,18 @@ describe("readHandoff", () => {
     expect(readHandoff({ hash: "#dob=1985-03-21&from=calculator" })).toEqual({ dob: "1985-03-21", from: "calculator" });
   });
 
+  it("reads name and date from the free-Blueprint email link", () => {
+    expect(readHandoff({ hash: "#name=Grace%20Elizabeth%20Mo%C3%B6re&dob=1985-03-21&from=email" })).toEqual({
+      dob: "1985-03-21",
+      name: "Grace Elizabeth Moöre",
+      from: "email",
+    });
+    // a name with markup or digits is dropped, the date still prefills
+    expect(readHandoff({ hash: "#name=%3Cb%3EX%3C%2Fb%3E&dob=1985-03-21&from=email" })).toEqual({ dob: "1985-03-21" });
+    // a name is only trusted on our own email link
+    expect(readHandoff({ hash: "#name=Grace&dob=1985-03-21&from=calculator" })).toEqual({ dob: "1985-03-21", from: "calculator" });
+  });
+
   it("ignores dates that are not real, too old, or in the future", () => {
     expect(readHandoff({ hash: "#dob=1985-02-30" })).toEqual({});
     expect(readHandoff({ hash: "#dob=1850-01-01" })).toEqual({});
@@ -58,6 +70,21 @@ describe("calculator → Blueprint handoff", () => {
 
     expect(await screen.findByDisplayValue("1985-03-21")).toBeInTheDocument();
     expect(screen.getByText(/We filled in the date from the Life Path calculator/i)).toBeInTheDocument();
+    replace.mockRestore();
+  });
+
+  it("opens the reading directly from the free-Blueprint email link", async () => {
+    Object.defineProperty(window, "location", {
+      writable: true,
+      value: { ...original, pathname: "/", search: "", hash: "#name=Grace%20Elizabeth%20Moore&dob=1985-03-21&from=email" },
+    });
+    const replace = vi.spyOn(window.history, "replaceState");
+
+    render(<Index />);
+
+    expect(await screen.findByText(/Unlock The Premium Edition/i)).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/your@email.com/i)).toBeNull();
+    expect(replace.mock.calls[0].slice(1)).toEqual(["", "/"]);
     replace.mockRestore();
   });
 
