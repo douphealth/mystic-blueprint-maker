@@ -20,6 +20,9 @@
 //        -> { entitled, email?, reason? }
 //   POST /wp-json/mdx/v1/create-payment      { email? }
 //        -> { url, mode?, entitled? }
+//   POST /wp-json/mdx/v1/request-restore     { email }
+//        -> { ok }   (always the same answer, so it cannot be used to test
+//                     whether an address bought something)
 //
 // The defensive semantics in premiumApi.ts are preserved exactly: every call is
 // optional, time-boxed, and a transport failure is reported as "inconclusive"
@@ -75,12 +78,25 @@ async function wpPost<T>(path: string, body: unknown, timeoutMs: number): Promis
   }
 }
 
+export interface WpReceipt {
+  /** Smallest currency unit, as Stripe reports it (799 = $7.99). */
+  amount_total?: number;
+  currency?: string;
+  /** "YYYY-MM-DD HH:MM:SS" in the site's timezone. */
+  purchased_at?: string;
+}
+
 export interface WpVerifyPayload {
   entitled?: boolean;
   email?: string;
   reason?: string;
   inconclusive?: boolean;
   source?: string;
+  receipt?: WpReceipt;
+}
+
+export interface WpRestorePayload {
+  ok?: boolean;
 }
 
 export interface WpPaymentPayload {
@@ -91,7 +107,7 @@ export interface WpPaymentPayload {
 
 /** Ask whether a session or email is entitled. */
 export function wpVerifyEntitlement(
-  body: { session_id?: string; email?: string },
+  body: { session_id?: string; email?: string; token?: string },
   timeoutMs: number,
 ): Promise<WpResponse<WpVerifyPayload>> {
   return wpPost<WpVerifyPayload>("/verify-entitlement", body, timeoutMs);
@@ -103,4 +119,15 @@ export function wpCreatePayment(
   timeoutMs: number,
 ): Promise<WpResponse<WpPaymentPayload>> {
   return wpPost<WpPaymentPayload>("/create-payment", body, timeoutMs);
+}
+
+/**
+ * Ask the server to email a one-time unlock link to a buyer. The answer is the
+ * same whether or not the address has a purchase.
+ */
+export function wpRequestRestore(
+  body: { email: string },
+  timeoutMs: number,
+): Promise<WpResponse<WpRestorePayload>> {
+  return wpPost<WpRestorePayload>("/request-restore", body, timeoutMs);
 }

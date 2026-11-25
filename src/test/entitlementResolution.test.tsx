@@ -227,31 +227,71 @@ describe("entitlement resolution", () => {
   });
 });
 
+/**
+ * Answer by route, so a test can stand up the new backend (request-restore
+ * exists) or the older one (request-restore is a 404) side by side.
+ */
+const routes = (table: Record<string, { status?: number; body?: Record<string, unknown> }>) =>
+  mockFetch.mockImplementation(async (url: string) => {
+    const hit = Object.entries(table).find(([path]) => String(url).endsWith(path));
+    if (!hit) return { ok: false, status: 404, json: async () => ({ code: "rest_no_route" }) };
+    const status = hit[1].status ?? 200;
+    return { ok: status >= 200 && status < 300, status, json: async () => hit[1].body ?? {} };
+  });
+
+const calledPaths = () => mockFetch.mock.calls.map((c) => String(c[0]).replace(/^.*\/mdx\/v1/, ""));
+
 describe("restore purchase UI", () => {
-  it("asks for the address first and only then unlocks", async () => {
+  it("emails an unlock link and does not unlock on a typed address", async () => {
+    routes({ "/request-restore": { body: { ok: true } } });
     render(<RestorePurchase defaultEmail="" />);
 
     fireEvent.click(screen.getByText(/Already purchased\? Restore it/i));
-    expect(screen.getByPlaceholderText(/you@example.com/i)).toBeInTheDocument();
-
-    backendSays({ entitled: true, email: "amara@example.com" });
     fireEvent.change(screen.getByPlaceholderText(/you@example.com/i), {
       target: { value: "amara@example.com" },
     });
-    fireEvent.click(screen.getByText(/Restore my purchase/i));
+    fireEvent.click(screen.getByText(/Email me a link/i));
+
+    expect(await screen.findByText(/we've emailed it a/i, {}, { timeout: 8000 })).toBeInTheDocument();
+    expect(isPremiumUnlocked()).toBe(false);
+    expect(calledPaths()).toEqual(["/request-restore"]);
+  });
+
+  it("gives the same answer whether or not the address bought anything", async () => {
+    // The server replies ok either way; the UI must not hint at the difference.
+    routes({ "/request-restore": { body: { ok: true } } });
+    render(<RestorePurchase defaultEmail="stranger@example.com" startOpen />);
+    fireEvent.click(screen.getByText(/Email me a link/i));
+
+    expect(await screen.findByText(/has a Premium Edition purchase/i, {}, { timeout: 8000 })).toBeInTheDocument();
+    expect(screen.queryByText(/couldn't find a purchase/i)).toBeNull();
+  });
+
+  it("falls back to the direct lookup against the older backend", async () => {
+    routes({ "/verify-entitlement": { body: { entitled: true, email: "amara@example.com" } } });
+    render(<RestorePurchase defaultEmail="amara@example.com" startOpen />);
+    fireEvent.click(screen.getByText(/Email me a link/i));
 
     expect(await screen.findByText(/Purchase restored/i, {}, { timeout: 8000 })).toBeInTheDocument();
     expect(isPremiumUnlocked()).toBe(true);
+    expect(calledPaths()).toEqual(["/request-restore", "/verify-entitlement"]);
   });
 
-  it("says so plainly when no purchase is found, without breaking", async () => {
-    backendSays({ entitled: false, reason: "not_found" });
-    render(<RestorePurchase defaultEmail="stranger@example.com" />);
-
-    fireEvent.click(screen.getByText(/Already purchased\? Restore it/i));
-    fireEvent.click(screen.getByText(/Restore my purchase/i));
+  it("says so plainly when the older backend finds nothing", async () => {
+    routes({ "/verify-entitlement": { body: { entitled: false, reason: "not_found" } } });
+    render(<RestorePurchase defaultEmail="stranger@example.com" startOpen />);
+    fireEvent.click(screen.getByText(/Email me a link/i));
 
     expect(await screen.findByText(/couldn't find a purchase/i, {}, { timeout: 8000 })).toBeInTheDocument();
+    expect(isPremiumUnlocked()).toBe(false);
+  });
+
+  it("says the server is unreachable rather than 'no purchase' when it is down", async () => {
+    backendDown();
+    render(<RestorePurchase defaultEmail="amara@example.com" startOpen />);
+    fireEvent.click(screen.getByText(/Email me a link/i));
+
+    expect(await screen.findByText(/couldn't reach our records/i, {}, { timeout: 8000 })).toBeInTheDocument();
     expect(isPremiumUnlocked()).toBe(false);
   });
 
@@ -260,7 +300,7 @@ describe("restore purchase UI", () => {
 
     fireEvent.click(screen.getByText(/Already purchased\? Restore it/i));
     fireEvent.change(screen.getByPlaceholderText(/you@example.com/i), { target: { value: "not-an-email" } });
-    fireEvent.click(screen.getByText(/Restore my purchase/i));
+    fireEvent.click(screen.getByText(/Email me a link/i));
 
     expect(await screen.findByText(/Enter the email address you used at checkout/i)).toBeInTheDocument();
     expect(mockFetch).not.toHaveBeenCalled();
@@ -273,5 +313,36 @@ describe("restore purchase UI", () => {
     fireEvent.click(screen.getByText(/Already purchased\? Restore it/i));
 
     expect(screen.getByDisplayValue("amara@example.com")).toBeInTheDocument();
+  });
+});
+
+describe("restore link token", () => {
+  it("unlocks when the server confirms the token, and keeps the receipt", async () => {
+    routes({
+      "/verify-entitlement": {
+        body: { entitled: true, email: "amara@example.com", receipt: { amount_total: 799, currency: "usd", purchased_at: "2026-11-25 10:00:00" } },
+      },
+    });
+    const result = await resolveEntitlement({ restoreToken: "tok.sig" });
+    expect(result).toMatchObject({ entitled: true, source: "server", email: "amara@example.com" });
+    expect(result.receipt?.amount_total).toBe(799);
+    expect(isPremiumUnlocked()).toBe(true);
+    expect(JSON.parse(String(mockFetch.mock.calls[0][1].body))).toEqual({ token: "tok.sig" });
+  });
+
+  it("does not unlock on a token the server rejects", async () => {
+    routes({ "/verify-entitlement": { body: { entitled: false, reason: "bad_token" } } });
+    const result = await resolveEntitlement({ restoreToken: "forged" });
+    expect(result.entitled).toBe(false);
+    expect(isPremiumUnlocked()).toBe(false);
+  });
+});
+
+describe("checkout for an existing buyer", () => {
+  it("reports an emailed unlock link instead of a second checkout", async () => {
+    routes({ "/create-payment": { body: { mode: "restore_sent", url: "", entitled: true } } });
+    const result = await startCheckout("amara@example.com");
+    expect(result.mode).toBe("restore_sent");
+    expect(result.url).not.toContain("stripe.com");
   });
 });

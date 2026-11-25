@@ -7,6 +7,8 @@ import PremiumDelivery from "@/components/PremiumDelivery";
 import { resolveEntitlement, loadBuyerEmail, type Entitlement } from "@/lib/entitlement";
 import { PREMIUM_PAGE_COUNT } from "@/lib/editions";
 import { useNoindex } from "@/hooks/useNoindex";
+import OrderReceipt from "@/components/OrderReceipt";
+import LegalFooter from "@/components/LegalFooter";
 
 /**
  * Where Stripe's success_url lands:
@@ -74,8 +76,8 @@ const PaymentSuccess = () => {
   const verified = entitlement.entitled && entitlement.source === "server";
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
-      <motion.div
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
+      <motion.main
         initial={{ opacity: 0, scale: 0.94 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
@@ -117,9 +119,11 @@ const PaymentSuccess = () => {
             )}
 
             <p className="font-ui text-sm text-muted-foreground mb-8 max-w-lg mx-auto">
-              Your {PREMIUM_PAGE_COUNT}-page Premium Edition starts downloading automatically. Keep this page
-              bookmarked — you can download it again as many times as you like.
+              Your {PREMIUM_PAGE_COUNT}-page Premium Edition starts downloading automatically. It stays unlocked in
+              this browser, so you can download it again from your reading page at any time.
             </p>
+
+            <OrderReceipt receipt={entitlement.receipt} email={entitlement.email} />
 
             <PremiumDelivery autoDownload />
           </>
@@ -168,7 +172,8 @@ const PaymentSuccess = () => {
             Back to my blueprint <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
           </Button>
         </div>
-      </motion.div>
+      </motion.main>
+      <LegalFooter className="w-full max-w-3xl mt-12" />
     </div>
   );
 };

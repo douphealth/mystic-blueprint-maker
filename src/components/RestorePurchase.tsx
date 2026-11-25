@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2, ArrowRight, MailQuestion, CheckCircle } from "lucide-react";
+import { Loader2, ArrowRight, MailQuestion, CheckCircle, MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PremiumDelivery from "@/components/PremiumDelivery";
-import { resolveEntitlement, saveBuyerEmail, type Entitlement } from "@/lib/entitlement";
+import { markPremiumUnlocked, saveBuyerEmail } from "@/lib/entitlement";
+import { requestRestoreLink } from "@/lib/premiumApi";
 
 /**
  * "I already paid — where is my file?"
@@ -14,43 +15,54 @@ import { resolveEntitlement, saveBuyerEmail, type Entitlement } from "@/lib/enti
  * is a support ticket and a refund request every single time, and it is a
  * worse outcome for the customer than any amount of casual over-delivery.
  *
- * Lookup is by the email address the purchase was recorded against, which the
- * Stripe webhook wrote server-side. When the backend is unreachable the check
- * is inconclusive and we say so plainly rather than telling a paying customer
- * they never bought anything.
+ * The buyer types the address they paid with and the server emails a one-time
+ * unlock link to it. Unlocking on the typed address alone (the old behaviour)
+ * let anyone who knew a buyer's email get the paid file, and told them that
+ * person had bought it. The reply is the same whether or not a purchase exists.
+ *
+ * Against an older backend without the request-restore route, this falls back
+ * to the direct lookup so restore keeps working during the rollout.
  */
 interface RestorePurchaseProps {
   /** Prefilled from the email gate when we have it. */
   defaultEmail?: string;
   /** Called once access is granted, so the parent can swap the paywall out. */
   onRestored?: () => void;
+  /** Show the email field straight away instead of the "Restore it" link. */
+  startOpen?: boolean;
 }
 
-const RestorePurchase = ({ defaultEmail, onRestored }: RestorePurchaseProps) => {
-  const [open, setOpen] = useState(false);
+const RestorePurchase = ({ defaultEmail, onRestored, startOpen = false }: RestorePurchaseProps) => {
+  const [open, setOpen] = useState(startOpen);
   const [email, setEmail] = useState(defaultEmail ?? "");
   const [checking, setChecking] = useState(false);
-  const [result, setResult] = useState<Entitlement | null>(null);
+  const [restored, setRestored] = useState(false);
+  const [sentTo, setSentTo] = useState("");
   const [error, setError] = useState("");
 
   const handleRestore = async () => {
     const trimmed = email.trim().toLowerCase();
-    if (!trimmed.includes("@")) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
       setError("Enter the email address you used at checkout.");
       return;
     }
     setError("");
     setChecking(true);
     try {
-      const outcome = await resolveEntitlement({ email: trimmed });
-      if (outcome.entitled) {
+      const outcome = await requestRestoreLink(trimmed);
+      if (outcome.kind === "link_sent") {
+        setSentTo(trimmed);
+      } else if (outcome.kind === "legacy" && outcome.result.entitled) {
+        markPremiumUnlocked();
         saveBuyerEmail(trimmed);
-        setResult(outcome);
+        setRestored(true);
         onRestored?.();
-      } else {
+      } else if (outcome.kind === "legacy" && !outcome.result.inconclusive) {
         setError(
-          "We couldn't find a purchase for that address. Try the one from your Stripe receipt — or if you're sure, reply to that receipt and we'll fix it.",
+          "We couldn't find a purchase for that address. Try the one from your Stripe receipt, or reply to that receipt and we'll fix it.",
         );
+      } else {
+        setError("We couldn't reach our records just now. Please try again in a moment.");
       }
     } catch {
       setError("We couldn't reach our records just now. Please try again in a moment.");
@@ -59,7 +71,26 @@ const RestorePurchase = ({ defaultEmail, onRestored }: RestorePurchaseProps) => 
     }
   };
 
-  if (result?.entitled) {
+  if (sentTo) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        role="status"
+        className="max-w-md mx-auto mt-8 text-left rounded-2xl border border-border/50 bg-card/60 p-5"
+      >
+        <div className="flex items-start gap-3">
+          <MailCheck className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+          <p className="font-body text-sm text-muted-foreground">
+            If <span className="text-foreground">{sentTo}</span> has a Premium Edition purchase, we've emailed it a
+            one-time link that unlocks it in this browser. It can take a few minutes; check your spam folder too.
+          </p>
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (restored) {
     return (
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-8">
         <div className="flex items-center justify-center gap-2 mb-4 text-primary">
@@ -94,12 +125,15 @@ const RestorePurchase = ({ defaultEmail, onRestored }: RestorePurchaseProps) => 
       <div className="flex items-start gap-3 mb-4">
         <MailQuestion className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
         <p className="font-body text-sm text-muted-foreground">
-          Enter the email address you paid with and we'll unlock your Premium Edition on this device.
+          Enter the email address you paid with. We'll email you a one-time link that unlocks your Premium Edition
+          in this browser.
         </p>
       </div>
 
       <Input
         type="email"
+        autoComplete="email"
+        aria-label="Email address you paid with"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         onKeyDown={(e) => {
@@ -123,7 +157,7 @@ const RestorePurchase = ({ defaultEmail, onRestored }: RestorePurchaseProps) => 
             </>
           ) : (
             <>
-              Restore my purchase <ArrowRight className="w-4 h-4 ml-2" />
+              Email me a link <ArrowRight className="w-4 h-4 ml-2" />
             </>
           )}
         </Button>

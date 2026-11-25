@@ -3,21 +3,21 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Lock, Heart, TrendingUp, Compass, Lightbulb, Download, Star, Loader2, Zap, Layers } from "lucide-react";
 import RestorePurchase from "@/components/RestorePurchase";
-import { startCheckout } from "@/lib/premiumApi";
+import { startCheckout, RESTORE_SENT_NOTICE } from "@/lib/premiumApi";
 import { FREE_PAGE_COUNT, PREMIUM_PAGE_LABEL, PREMIUM_PAGE_COUNT } from "@/lib/editions";
 import { useToast } from "@/hooks/use-toast";
 
 const premiumModules = [
   { icon: Compass, title: "Deep Shadow Pattern Analysis", desc: "The trigger, the coping move, the cost, and the mature response — for every number in your chart" },
-  { icon: Heart, title: "Relationship Compatibility Map", desc: "Your signature read against all 12 Life Paths, plus red flags and green lights you can actually use" },
+  { icon: Heart, title: "Relationship Compatibility Map", desc: "Your numbers read against all 12 Life Paths, with themes to talk about and patterns to watch" },
   { icon: Layers, title: "Life Phase Map (Pinnacles & Challenges)", desc: "All 4 Pinnacles with exact age ranges, and all 4 Challenges worked through one at a time" },
   { icon: Star, title: "Personalised Lucky Codes", desc: "Power colours, crystal, element, direction, favourable days and numbers, plus an affirmation per number" },
   { icon: Lightbulb, title: "Career & Purpose Alignment", desc: "Environments, roles and industries for your Expression — plus a 7-line fit grid for any opportunity" },
-  { icon: TrendingUp, title: "Wealth & Legacy Settings", desc: "Your money archetype, where it leaks, the one rule that fixes it, and a legacy builder worksheet" },
+  { icon: TrendingUp, title: "Wealth & Legacy Settings", desc: "Your money archetype, the habits it suggests looking at, and a legacy worksheet" },
   { icon: Zap, title: "Annual Forecast Deep Dive", desc: "Your Personal Year in depth, your position in the nine-year wave, and four months at a time with full detail" },
   { icon: Compass, title: "Personal Operating System", desc: "Five principles, a four-line decision filter, a 90-day execution board and a quarterly review protocol" },
   { icon: TrendingUp, title: "Growth Acceleration Prompts", desc: "35 uncomfortable questions across 7 domains, with space to actually write the answers" },
-  { icon: Download, title: `${PREMIUM_PAGE_LABEL} Premium Edition PDF`, desc: "Museum-quality printable report — a keepsake you'll reference for years" },
+  { icon: Download, title: `${PREMIUM_PAGE_LABEL} Premium Edition PDF`, desc: "A printable PDF generated from your name and birth date, yours to keep" },
 ];
 
 interface PremiumPaywallProps {
@@ -31,21 +31,30 @@ const PremiumPaywall = ({ email, onUnlocked }: PremiumPaywallProps) => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
+  const [notice, setNotice] = useState("");
+
   const handleUnlock = async () => {
     setLoading(true);
+    setNotice("");
     try {
       // startCheckout tries the backend first and falls back to the static
-      // Stripe payment link, so this no longer surfaces a raw network error
-      // when the edge function is unreachable.
-      const { url } = await startCheckout(email);
-      window.open(url, "_blank");
+      // Stripe payment link, so the visitor is never shown a raw network error.
+      const result = await startCheckout(email);
+      if (result.mode === "restore_sent") {
+        setNotice(RESTORE_SENT_NOTICE);
+        setLoading(false);
+        return;
+      }
+      // Same tab. window.open() after an await is not a direct user gesture,
+      // so Safari and iOS block it as a popup and the button looks dead.
+      // Stripe returns to /payment-success or /payment-canceled on this site.
+      window.location.assign(result.url);
     } catch (err: unknown) {
       toast({
         title: "Payment error",
         description: err instanceof Error ? err.message : "Something went wrong. Please try again.",
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
   };
@@ -121,12 +130,25 @@ const PremiumPaywall = ({ email, onUnlocked }: PremiumPaywallProps) => {
               "Unlock The Premium Edition — $7.99"
             )}
           </Button>
-          <p className="font-ui text-[10px] text-muted-foreground mt-3 tracking-wider">
-            One-time payment · Instant access · Lifetime updates
+          <p className="font-ui text-[11px] text-muted-foreground mt-3 tracking-wider">
+            $7.99 one-time · No subscription · Instant PDF download
           </p>
-          <p className="font-ui text-[10px] text-muted-foreground/50 mt-1">
-            Built from your exact name and birth date — not generic
+          <p className="font-ui text-[11px] text-muted-foreground mt-2 max-w-md mx-auto leading-relaxed">
+            Secure checkout by Stripe. By paying you agree to the{" "}
+            <a href="/terms" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-foreground">terms</a>.
+            {" "}Refunds: see our{" "}
+            <a href="/terms#refunds" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-foreground">refund policy</a>.
+            {" "}How we handle your data:{" "}
+            <a href="/privacy" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-foreground">privacy notice</a>.
           </p>
+          <p className="font-ui text-[11px] text-muted-foreground/80 mt-2 max-w-md mx-auto leading-relaxed">
+            For reflection and entertainment. The Premium Edition explores themes; it doesn't predict outcomes.
+          </p>
+          {notice && (
+            <p role="status" className="mt-4 max-w-md mx-auto rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 font-ui text-xs leading-relaxed text-foreground/80">
+              {notice}
+            </p>
+          )}
         </motion.div>
 
         {/* The way back in for anyone who already paid. */}
@@ -136,14 +158,14 @@ const PremiumPaywall = ({ email, onUnlocked }: PremiumPaywallProps) => {
       {/* Blurred teaser */}
       <div className="mt-10 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background z-10" />
-        <div className="filter blur-sm opacity-30 pointer-events-none space-y-3">
+        <div aria-hidden="true" className="filter blur-sm opacity-30 pointer-events-none space-y-3">
           <div className="bg-card-gradient rounded-xl p-6 border border-border/20">
-            <h3 className="font-display text-base text-foreground">Shadow Patterns & Karmic Wounds</h3>
-            <p className="font-body text-sm text-foreground/40 mt-2">Your shadow analysis reveals deep subconscious patterns that have been silently sabotaging your relationships, career, and personal growth. The specific interplay between your Life Path and Personality creates…</p>
+            <h3 className="font-display text-base text-foreground">Shadow Patterns</h3>
+            <p className="font-body text-sm text-foreground/40 mt-2">Each number has a shadow side: the habit it falls back on under stress. This section looks at how your Life Path and Personality numbers combine, the patterns that can follow, and…</p>
           </div>
           <div className="bg-card-gradient rounded-xl p-6 border border-border/20">
             <h3 className="font-display text-base text-foreground">Relationship Compatibility Blueprint</h3>
-            <p className="font-body text-sm text-foreground/40 mt-2">Based on your complete numerological profile, your ideal romantic partner carries vibrational frequencies that complement your specific energy pattern. Your Soul Urge combined with your Personality reveals…</p>
+            <p className="font-body text-sm text-foreground/40 mt-2">Your Soul Urge and Personality numbers are read against each Life Path, with the themes numerology associates with each pairing, things to talk about, and…</p>
           </div>
         </div>
       </div>
