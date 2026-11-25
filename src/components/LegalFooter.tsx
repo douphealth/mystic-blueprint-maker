@@ -29,7 +29,7 @@ const LegalFooter = ({ className = "" }: { className?: string }) => (
         Contact
       </a>
     </nav>
-    <p className="text-[10px] text-muted-foreground/70">
+    <p className="text-[11px] text-muted-foreground">
       © {new Date().getFullYear()}{" "}
       <a href="https://mysticaldigits.com/" className="hover:text-foreground">
         MysticalDigits.com

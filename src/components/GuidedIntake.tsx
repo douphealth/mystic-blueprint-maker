@@ -81,7 +81,7 @@ const GuidedIntake = ({ onComplete, initialName = "", notice, initialDob = "" }:
             {Math.round(progress)}%
           </span>
         </div>
-        <Progress value={progress} className="h-1 bg-muted/30" />
+        <Progress value={progress} aria-label={`Step ${step + 1} of ${totalSteps}`} className="h-1 bg-muted/30" />
       </motion.div>
 
       {/* Steps */}
